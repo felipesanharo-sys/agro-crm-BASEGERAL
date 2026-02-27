@@ -778,6 +778,10 @@ export const appRouter = router({
 
   // Invite & User Management
   invites: router({
+    availableReps: adminProcedure.query(async () => {
+      // Busca RCs diretamente dos dados de faturamento (invoices)
+      return db.getDistinctRepCodesFromInvoices();
+    }),
     create: adminProcedure
       .input(z.object({ repCode: z.string().min(1) }))
       .mutation(async ({ input }) => {

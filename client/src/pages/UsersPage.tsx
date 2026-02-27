@@ -47,6 +47,10 @@ export default function UsersPage() {
   const { data: userList, isLoading: usersLoading } = trpc.users.list.useQuery();
   const { data: inviteList, isLoading: invitesLoading } = trpc.invites.list.useQuery();
   const { data: repOptions } = trpc.profile.getRepOptions.useQuery();
+  // RCs extraídos automaticamente do faturamento (invoices) para geração de convites
+  const { data: invoiceReps } = trpc.invites.availableReps.useQuery(undefined, {
+    enabled: currentUser?.role === "admin",
+  });
 
   // Mutations
   const utils = trpc.useUtils();
@@ -472,10 +476,13 @@ export default function UsersPage() {
                       <span className="font-medium">Gestor (visão completa)</span>
                     </div>
                   </SelectItem>
-                  {repOptions?.map((r: any) => (
+                  {(invoiceReps && invoiceReps.length > 0 ? invoiceReps : repOptions)?.map((r: any) => (
                     <SelectItem key={r.repCode} value={r.repCode}>
                       <div className="flex items-center gap-2">
-                        <span>{r.alias || r.repName}</span>
+                        <span>{r.repName || r.alias || r.repCode}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ({r.totalClients ? `${r.totalClients} clientes` : r.repCode})
+                        </span>
                         {linkedRepCodes.has(r.repCode) && (
                           <Badge variant="secondary" className="text-[10px] px-1">vinculado</Badge>
                         )}

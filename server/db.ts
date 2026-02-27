@@ -319,6 +319,27 @@ export async function getPricePerKgByProduct(repCode?: string) {
   return (result as any)[0] || [];
 }
 
+// ---- Distinct RCs from Invoices ----
+
+export async function getDistinctRepCodesFromInvoices() {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.execute(sql`
+    SELECT DISTINCT repCode, repName,
+      COUNT(DISTINCT clientCodeSAP) as totalClients,
+      SUM(CAST(kgInvoiced AS DECIMAL(14,2))) as totalKg
+    FROM invoices
+    GROUP BY repCode, repName
+    ORDER BY repName ASC
+  `);
+  return ((result as any)[0] || []).map((r: any) => ({
+    repCode: r.repCode as string,
+    repName: r.repName as string,
+    totalClients: Number(r.totalClients) || 0,
+    totalKg: Number(r.totalKg) || 0,
+  }));
+}
+
 // ---- Manager Queries ----
 
 export async function getRepSummary() {

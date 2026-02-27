@@ -64,3 +64,8 @@
 - [x] Testes de parsing de datas e números brasileiros
 - [x] Testes de formatação yearMonth
 - [x] 14 testes passando
+
+## Melhoria: Reconhecimento automático de RCs
+- [x] Criar rota que extrai lista de RCs distintos dos dados de faturamento (invoices)
+- [x] Na tela de convites, popular dropdown com RCs do faturamento automaticamente
+- [x] Admin escolhe RC da lista e gera link de convite sem cadastro manual prévio
