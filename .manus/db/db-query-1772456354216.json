@@ -1,0 +1,64 @@
+{
+  "query": "SELECT id, token, repCode, usedAt FROM rc_invites LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2ph4pv6JpSHUTGy.c27c69ec344c --database 6KRpzbn8qi3gczW3Bt9Xb7 --execute SELECT id, token, repCode, usedAt FROM rc_invites LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "token": "800629f45521f51faca2a2345c9debdf7d5bc3276421ebea",
+      "repCode": "VBR0048940",
+      "usedAt": "NULL"
+    },
+    {
+      "id": "2",
+      "token": "aafc0ab841aa0d0a9a671ca1ed78266b282b529f235e2651",
+      "repCode": "VBR0048171",
+      "usedAt": "NULL"
+    },
+    {
+      "id": "3",
+      "token": "4d02237555c22754957f1b7fe39685063e118d140fdcf3c9",
+      "repCode": "VBR0047982",
+      "usedAt": "NULL"
+    },
+    {
+      "id": "4",
+      "token": "e9b74afe44ae02d5154528373a523f82187a1cdd9f5cffcd",
+      "repCode": "VBR0019196",
+      "usedAt": "NULL"
+    },
+    {
+      "id": "5",
+      "token": "2face1dbc3f3c9bac2ac40f806355f9756614c9a33638f88",
+      "repCode": "VBR0017985",
+      "usedAt": "NULL"
+    },
+    {
+      "id": "6",
+      "token": "fb90b125289772fbf4a3c3af1ce3827d6c2df12a9aa981f7",
+      "repCode": "VBR0048228",
+      "usedAt": "NULL"
+    },
+    {
+      "id": "7",
+      "token": "420c49598a284eaa9292cbdc9858182646a5b6678459f8ca",
+      "repCode": "VBR0048386",
+      "usedAt": "NULL"
+    },
+    {
+      "id": "8",
+      "token": "04f6cad5eb9de48b36f5cd6b2b6e2b422405efa5f4b72507",
+      "repCode": "VBR0019342",
+      "usedAt": "NULL"
+    },
+    {
+      "id": "9",
+      "token": "83d2961c0fe84d310f86718ba005f323a4bc866e5ffc1d2d",
+      "repCode": "VBR0048940",
+      "usedAt": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttoken\trepCode\tusedAt\n1\t800629f45521f51faca2a2345c9debdf7d5bc3276421ebea\tVBR0048940\tNULL\n2\taafc0ab841aa0d0a9a671ca1ed78266b282b529f235e2651\tVBR0048171\tNULL\n3\t4d02237555c22754957f1b7fe39685063e118d140fdcf3c9\tVBR0047982\tNULL\n4\te9b74afe44ae02d5154528373a523f82187a1cdd9f5cffcd\tVBR0019196\tNULL\n5\t2face1dbc3f3c9bac2ac40f806355f9756614c9a33638f88\tVBR0017985\tNULL\n6\tfb90b125289772fbf4a3c3af1ce3827d6c2df12a9aa981f7\tVBR0048228\tNULL\n7\t420c49598a284eaa9292cbdc9858182646a5b6678459f8ca\tVBR0048386\tNULL\n8\t04f6cad5eb9de48b36f5cd6b2b6e2b422405efa5f4b72507\tVBR0019342\tNULL\n9\t83d2961c0fe84d310f86718ba005f323a4bc866e5ffc1d2d\tVBR0048940\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 350
+}

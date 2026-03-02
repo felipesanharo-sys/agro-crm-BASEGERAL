@@ -69,3 +69,7 @@
 - [x] Criar rota que extrai lista de RCs distintos dos dados de faturamento (invoices)
 - [x] Na tela de convites, popular dropdown com RCs do faturamento automaticamente
 - [x] Admin escolhe RC da lista e gera link de convite sem cadastro manual prévio
+
+## Bug: Página de convite abre em branco
+- [x] Investigar e corrigir InvitePage que abre em branco quando RC acessa o link
+- [x] Corrigido: OAuth callback agora respeita returnPath do state para redirecionar de volta à página de convite após login
