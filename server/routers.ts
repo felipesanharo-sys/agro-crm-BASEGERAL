@@ -779,8 +779,35 @@ export const appRouter = router({
   // Invite & User Management
   invites: router({
     availableReps: adminProcedure.query(async () => {
-      // Busca RCs diretamente dos dados de faturamento (invoices)
-      return db.getDistinctRepCodesFromInvoices();
+      // Fallback: se rep_aliases tem dados → usa aliases (original)
+      // Se rep_aliases está vazia → busca RCs de invoices (fallback)
+      const d = await db.getDb();
+      if (!d) return [];
+      const { sql: sqlTag } = await import("drizzle-orm");
+      const aliasRows = await d.execute(sqlTag`SELECT COUNT(*) as cnt FROM rep_aliases`);
+      const aliasCount = Number((aliasRows as any)[0]?.[0]?.cnt || 0);
+      if (aliasCount > 0) {
+        // Usa aliases com enriquecimento de dados de invoices
+        const rows = await d.execute(sqlTag`
+          SELECT ra.repCode, ra.alias as repName, ra.parentRepCode, ra.isGestor,
+            COUNT(DISTINCT i.clientCodeSAP) as totalClients,
+            COALESCE(SUM(CAST(i.kgInvoiced AS DECIMAL(14,2))), 0) as totalKg
+          FROM rep_aliases ra
+          LEFT JOIN invoices i ON i.repCode = ra.repCode
+          GROUP BY ra.repCode, ra.alias, ra.parentRepCode, ra.isGestor
+          ORDER BY ra.alias ASC
+        `);
+        return ((rows as any)[0] || []).map((r: any) => ({
+          repCode: r.repCode as string,
+          repName: r.repName as string,
+          totalClients: Number(r.totalClients) || 0,
+          totalKg: Number(r.totalKg) || 0,
+          source: "aliases" as const,
+        }));
+      }
+      // Fallback: busca RCs diretamente dos dados de faturamento
+      const reps = await db.getDistinctRepCodesFromInvoices();
+      return reps.map((r: any) => ({ ...r, source: "invoices" as const }));
     }),
     create: adminProcedure
       .input(z.object({ repCode: z.string().min(1) }))

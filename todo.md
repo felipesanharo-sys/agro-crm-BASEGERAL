@@ -73,3 +73,7 @@
 ## Bug: Página de convite abre em branco
 - [x] Investigar e corrigir InvitePage que abre em branco quando RC acessa o link
 - [x] Corrigido: OAuth callback agora respeita returnPath do state para redirecionar de volta à página de convite após login
+
+## Melhoria: Fallback aliases → invoices para dropdown de convites
+- [x] Se rep_aliases tem dados → usa aliases (original)
+- [x] Se rep_aliases está vazia → busca RCs de invoices (fallback)

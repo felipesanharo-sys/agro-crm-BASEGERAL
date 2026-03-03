@@ -47,8 +47,8 @@ export default function UsersPage() {
   const { data: userList, isLoading: usersLoading } = trpc.users.list.useQuery();
   const { data: inviteList, isLoading: invitesLoading } = trpc.invites.list.useQuery();
   const { data: repOptions } = trpc.profile.getRepOptions.useQuery();
-  // RCs extraídos automaticamente do faturamento (invoices) para geração de convites
-  const { data: invoiceReps } = trpc.invites.availableReps.useQuery(undefined, {
+  // RCs disponíveis para convites: usa aliases se existirem, senão busca de invoices (fallback automático)
+  const { data: availableReps } = trpc.invites.availableReps.useQuery(undefined, {
     enabled: currentUser?.role === "admin",
   });
 
@@ -476,7 +476,7 @@ export default function UsersPage() {
                       <span className="font-medium">Gestor (visão completa)</span>
                     </div>
                   </SelectItem>
-                  {(invoiceReps && invoiceReps.length > 0 ? invoiceReps : repOptions)?.map((r: any) => (
+                  {(availableReps || [])?.map((r: any) => (
                     <SelectItem key={r.repCode} value={r.repCode}>
                       <div className="flex items-center gap-2">
                         <span>{r.repName || r.alias || r.repCode}</span>
