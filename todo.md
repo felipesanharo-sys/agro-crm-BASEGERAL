@@ -82,3 +82,9 @@
 - [x] Alterar query backend do ranking consolidado para agrupar por microRegion
 - [x] Alterar frontend HistoryPage para exibir "Micro" ao invés de "RC" na visão consolidada
 - [x] Tratar pedidos sem micro com fallback "Sem Micro"
+
+## Bug: Discrepância de volume em fevereiro (484.655 vs 503.580 KG)
+- [x] Investigar causa da diferença de ~18.925 KG no volume total de fevereiro
+  - Conclusão: Arquivo original não contém dados de fevereiro de 2026 (vai até janeiro)
+  - Sistema está funcionando corretamente com 484.655 KG importados
+  - Valor esperado (503.580) não existe no arquivo original

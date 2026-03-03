@@ -1,0 +1,22 @@
+{
+  "query": "SELECT yearMonth, SUM(CAST(kgInvoiced AS DECIMAL(14,2))) as totalKg, COUNT(*) as totalRows, COUNT(DISTINCT clientCodeSAP) as clients FROM invoices WHERE yearMonth LIKE '2026.02%' OR yearMonth LIKE '2025.02%' GROUP BY yearMonth ORDER BY yearMonth",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2ph4pv6JpSHUTGy.c27c69ec344c --database 6KRpzbn8qi3gczW3Bt9Xb7 --execute SELECT yearMonth, SUM(CAST(kgInvoiced AS DECIMAL(14,2))) as totalKg, COUNT(*) as totalRows, COUNT(DISTINCT clientCodeSAP) as clients FROM invoices WHERE yearMonth LIKE '2026.02%' OR yearMonth LIKE '2025.02%' GROUP BY yearMonth ORDER BY yearMonth",
+  "rows": [
+    {
+      "yearMonth": "2025.02",
+      "totalKg": "428832.00",
+      "totalRows": "384",
+      "clients": "81"
+    },
+    {
+      "yearMonth": "2026.02",
+      "totalKg": "484655.00",
+      "totalRows": "397",
+      "clients": "97"
+    }
+  ],
+  "messages": [],
+  "stdout": "yearMonth\ttotalKg\ttotalRows\tclients\n2025.02\t428832.00\t384\t81\n2026.02\t484655.00\t397\t97\n",
+  "stderr": "",
+  "execution_time_ms": 417
+}

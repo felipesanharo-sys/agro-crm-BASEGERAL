@@ -1,0 +1,15 @@
+{
+  "query": "SELECT yearMonth, ROUND(SUM(CAST(kgInvoiced AS DECIMAL(14,2))), 2) as totalKg, COUNT(*) as totalRows FROM invoices WHERE yearMonth = '2026.02' GROUP BY yearMonth",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2ph4pv6JpSHUTGy.c27c69ec344c --database 6KRpzbn8qi3gczW3Bt9Xb7 --execute SELECT yearMonth, ROUND(SUM(CAST(kgInvoiced AS DECIMAL(14,2))), 2) as totalKg, COUNT(*) as totalRows FROM invoices WHERE yearMonth = '2026.02' GROUP BY yearMonth",
+  "rows": [
+    {
+      "yearMonth": "2026.02",
+      "totalKg": "484655.00",
+      "totalRows": "397"
+    }
+  ],
+  "messages": [],
+  "stdout": "yearMonth\ttotalKg\ttotalRows\n2026.02\t484655.00\t397\n",
+  "stderr": "",
+  "execution_time_ms": 371
+}
