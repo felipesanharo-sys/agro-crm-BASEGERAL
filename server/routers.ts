@@ -209,6 +209,13 @@ export const appRouter = router({
                 mapped[dbCol] = String(val);
               }
             }
+            // Atribuir RC padrão (VBRP901022) se repCode estiver vazio
+            if (!mapped.repCode || mapped.repCode.trim() === "") {
+              mapped.repCode = "VBRP901022";
+              if (!mapped.repName || mapped.repName.trim() === "") {
+                mapped.repName = "João Fernando Ferreira S Carvalho";
+              }
+            }
             mapped.uploadId = logId;
             return mapped;
           }).filter(r => r.orderCode && r.orderItem && r.invoiceDate && r.repName && r.clientName && r.productName);

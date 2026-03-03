@@ -88,3 +88,10 @@
   - Conclusão: Arquivo original não contém dados de fevereiro de 2026 (vai até janeiro)
   - Sistema está funcionando corretamente com 484.655 KG importados
   - Valor esperado (503.580) não existe no arquivo original
+
+## Integração RC Padrão para Pedidos Órfãos
+- [x] Reprocessar registros existentes: atribuir VBRP901022 a pedidos sem repCode (parser CSV atualizado)
+- [x] Criar alias para VBRP901022 = "João Fernando Ferreira S Carvalho"
+- [x] Atualizar queries backend para usar VBRP901022 como fallback quando repCode vazio
+- [x] Atualizar dropdown de convites para incluir VBRP901022 (já aparece com 6 clientes e 75.475 kg)
+- [x] Testar que pedidos órfãos aparecem corretamente em todas as visualizações (14 testes passando)
