@@ -499,8 +499,8 @@ function ConsolidatedSection({ selectedMonth }: { selectedMonth: string }) {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">
-            Ranking RCs — {selectedMonth.replace(".", "/")}
-            <Badge variant="secondary" className="ml-2">{rows.length} RCs</Badge>
+            Ranking Micros — {selectedMonth.replace(".", "/")}
+            <Badge variant="secondary" className="ml-2">{rows.length} Micros</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -509,7 +509,7 @@ function ConsolidatedSection({ selectedMonth }: { selectedMonth: string }) {
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="text-left p-2 pl-3 font-medium">#</th>
-                  <th className="text-left p-2 font-medium">RC</th>
+                  <th className="text-left p-2 font-medium">Micro</th>
                   <th className="text-right p-2 font-medium">Volume (KG)</th>
                   <th className="text-right p-2 font-medium hidden md:table-cell">Receita</th>
                   <th className="text-right p-2 font-medium hidden md:table-cell">Clientes</th>

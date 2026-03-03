@@ -742,70 +742,68 @@ export async function getProductClientsForMonth(yearMonth: string, productName: 
 export async function getRcRankingForMonth(yearMonth: string) {
   const db = await getDb();
   if (!db) return [];
-  const aliases = await db.select().from(repAliases);
-  const aliasMap = new Map(aliases.map(a => [a.repCode, a]));
+
+  // Agrupar por microRegion ao invés de repCode na visão consolidada
+  // Isso captura pedidos diretos (sem RC) que sempre têm micro
   const result = await db.execute(sql`
-    SELECT repCode, SUM(CAST(kgInvoiced AS DECIMAL(14,2))) as totalKg,
+    SELECT COALESCE(microRegion, 'Sem Micro') as microRegion,
+      SUM(CAST(kgInvoiced AS DECIMAL(14,2))) as totalKg,
       SUM(CAST(revenueNoTax AS DECIMAL(14,2))) as totalRevenue,
       COUNT(DISTINCT clientCodeSAP) as uniqueClients,
-      COUNT(DISTINCT productName) as uniqueProducts
-    FROM invoices WHERE yearMonth = ${yearMonth} GROUP BY repCode ORDER BY totalKg DESC
+      COUNT(DISTINCT productName) as uniqueProducts,
+      COUNT(DISTINCT repCode) as rcCount
+    FROM invoices WHERE yearMonth = ${yearMonth}
+    GROUP BY COALESCE(microRegion, 'Sem Micro')
+    ORDER BY totalKg DESC
   `);
   const rows: any[] = (result as any)[0] || [];
+
+  // Buscar dados do mês anterior para variação
   const [prevYear, prevMonth] = yearMonth.split('.').map(Number);
   const pm = prevMonth === 1 ? 12 : prevMonth - 1;
   const py = prevMonth === 1 ? prevYear - 1 : prevYear;
   const prevYearMonth = `${py}.${String(pm).padStart(2, '0')}`;
   const prevResult = await db.execute(sql`
-    SELECT repCode, SUM(CAST(kgInvoiced AS DECIMAL(14,2))) as totalKg
-    FROM invoices WHERE yearMonth = ${prevYearMonth} GROUP BY repCode
+    SELECT COALESCE(microRegion, 'Sem Micro') as microRegion,
+      SUM(CAST(kgInvoiced AS DECIMAL(14,2))) as totalKg
+    FROM invoices WHERE yearMonth = ${prevYearMonth}
+    GROUP BY COALESCE(microRegion, 'Sem Micro')
   `);
   const prevRows: any[] = (prevResult as any)[0] || [];
-  const prevMap = new Map(prevRows.map((r: any) => [r.repCode, Number(r.totalKg)]));
+  const prevMap = new Map(prevRows.map((r: any) => [r.microRegion, Number(r.totalKg)]));
 
-  const consolidated = new Map<string, any>();
-  for (const row of rows) {
-    const alias = aliasMap.get(row.repCode);
-    const parentCode = alias?.parentRepCode || row.repCode;
-    const parentAlias = aliasMap.get(parentCode);
-    const key = parentCode;
-    const existing = consolidated.get(key);
-    if (existing) {
-      existing.totalKg += Number(row.totalKg);
-      existing.totalRevenue += Number(row.totalRevenue);
-      existing.uniqueClients += Number(row.uniqueClients);
-      existing.prevKg += prevMap.get(row.repCode) || 0;
-      if (alias && alias.repCode !== parentCode) existing.childAliases.push(alias.alias || row.repCode);
-    } else {
-      consolidated.set(key, {
-        repCode: parentCode,
-        alias: parentAlias?.alias || alias?.alias || row.repCode,
-        neCode: parentAlias?.neCode || alias?.neCode || null,
-        totalKg: Number(row.totalKg), totalRevenue: Number(row.totalRevenue),
-        uniqueClients: Number(row.uniqueClients), uniqueProducts: Number(row.uniqueProducts),
-        prevKg: prevMap.get(row.repCode) || 0,
-        childAliases: alias?.parentRepCode ? [alias.alias || row.repCode] : [],
-      });
-    }
-  }
   let grandTotalKg = 0;
-  for (const v of Array.from(consolidated.values())) grandTotalKg += v.totalKg;
-  const ranking = Array.from(consolidated.values()).map(r => ({
-    repCode: r.repCode, repAlias: r.alias, neCode: r.neCode,
-    totalKg: r.totalKg, totalRevenue: r.totalRevenue,
-    uniqueClients: r.uniqueClients, uniqueProducts: r.uniqueProducts,
-    ticketMedio: r.uniqueClients > 0 ? r.totalRevenue / r.uniqueClients : 0,
-    pctOfTotal: grandTotalKg > 0 ? (r.totalKg / grandTotalKg) * 100 : 0,
-    varVsPrev: r.prevKg > 0 ? ((r.totalKg - r.prevKg) / r.prevKg) * 100 : (r.totalKg > 0 ? 100 : 0),
-    childAliases: r.childAliases,
-  }));
+  for (const row of rows) grandTotalKg += Number(row.totalKg);
+
+  const ranking = rows.map(r => {
+    const prevKg = prevMap.get(r.microRegion) || 0;
+    const totalKg = Number(r.totalKg);
+    const totalRevenue = Number(r.totalRevenue);
+    const uniqueClients = Number(r.uniqueClients);
+    return {
+      repCode: r.microRegion,
+      repAlias: r.microRegion,
+      neCode: null,
+      totalKg,
+      totalRevenue,
+      uniqueClients,
+      uniqueProducts: Number(r.uniqueProducts),
+      rcCount: Number(r.rcCount),
+      ticketMedio: uniqueClients > 0 ? totalRevenue / uniqueClients : 0,
+      pctOfTotal: grandTotalKg > 0 ? (totalKg / grandTotalKg) * 100 : 0,
+      varVsPrev: prevKg > 0 ? ((totalKg - prevKg) / prevKg) * 100 : (totalKg > 0 ? 100 : 0),
+      childAliases: [] as string[],
+    };
+  });
+
   ranking.sort((a, b) => b.totalKg - a.totalKg);
   const totalRevenue = ranking.reduce((s, r) => s + r.totalRevenue, 0);
   const totalClients = ranking.reduce((s, r) => s + r.uniqueClients, 0);
-  const totalPrevKg = Array.from(consolidated.values()).reduce((s, r) => s + r.prevKg, 0);
+  const totalPrevKg = prevRows.reduce((s: number, r: any) => s + Number(r.totalKg), 0);
   ranking.push({
     repCode: "TOTAL", repAlias: "TOTAL", neCode: null,
     totalKg: grandTotalKg, totalRevenue, uniqueClients: totalClients, uniqueProducts: 0,
+    rcCount: 0,
     ticketMedio: totalClients > 0 ? totalRevenue / totalClients : 0, pctOfTotal: 100,
     varVsPrev: totalPrevKg > 0 ? ((grandTotalKg - totalPrevKg) / totalPrevKg) * 100 : 0,
     childAliases: [],

@@ -77,3 +77,8 @@
 ## Melhoria: Fallback aliases → invoices para dropdown de convites
 - [x] Se rep_aliases tem dados → usa aliases (original)
 - [x] Se rep_aliases está vazia → busca RCs de invoices (fallback)
+
+## Melhoria: Histórico consolidado agrupar por Micro ao invés de RC
+- [x] Alterar query backend do ranking consolidado para agrupar por microRegion
+- [x] Alterar frontend HistoryPage para exibir "Micro" ao invés de "RC" na visão consolidada
+- [x] Tratar pedidos sem micro com fallback "Sem Micro"
