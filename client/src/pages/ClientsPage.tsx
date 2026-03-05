@@ -445,7 +445,7 @@ function ClientDetailPanel({ client, onClose }: { client: any; onClose: () => vo
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   const { data: lastOrders, isLoading: loadingOrders } = trpc.clients.lastOrders.useQuery(
-    { clientCodeSAP: client.clientCodeSAP, repCode: client.repCode, limit: 6 },
+    { clientCodeSAP: client.clientCodeSAP, repCode: client.repCode, limit: 12 },
     { staleTime: 60000 }
   );
   const { data: products, isLoading: loadingProducts } = trpc.clients.productBreakdown.useQuery(
@@ -510,7 +510,7 @@ function ClientDetailPanel({ client, onClose }: { client: any; onClose: () => vo
           {/* Last Orders Tab */}
           <TabsContent value="orders" className="mt-3 space-y-2">
             {loadingOrders ? (
-              Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)
+              Array.from({ length: 12 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)
             ) : !lastOrders || lastOrders.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">Nenhum pedido encontrado</p>
             ) : (

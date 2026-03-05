@@ -95,3 +95,8 @@
 - [x] Atualizar queries backend para usar VBRP901022 como fallback quando repCode vazio
 - [x] Atualizar dropdown de convites para incluir VBRP901022 (já aparece com 6 clientes e 75.475 kg)
 - [x] Testar que pedidos órfãos aparecem corretamente em todas as visualizações (14 testes passando)
+
+## Melhoria: Aumentar últimos pedidos no card do cliente
+- [x] Aumentar de 6 para 12 últimos pedidos exibidos no card do cliente
+- [x] Atualizar skeletons de carregamento de 6 para 12
+- [x] Testar que não há bugs (14 testes passando)
