@@ -11,6 +11,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
   Search, Phone, MapPin, Calendar, Package, TrendingUp, RotateCcw,
   MessageSquarePlus, Users, Trophy, ShoppingCart, DollarSign, Weight,
@@ -440,6 +441,21 @@ function OrderProductDetail({ orderCode, clientCodeSAP, repCode }: { orderCode: 
   );
 }
 
+// ---- Seasonality Chart Component ----
+function SeasonalityChart({ data }: { data: any[] }) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+        <YAxis tick={{ fontSize: 12 }} />
+        <Tooltip formatter={(value: any) => formatKg(value) + " kg"} contentStyle={{ backgroundColor: "#fff", border: "1px solid #ccc", borderRadius: "4px" }} />
+        <Bar dataKey="kg" fill="#16a34a" radius={[4, 4, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
 // ---- Client Detail Drawer (Last Orders + Product Breakdown) ----
 function ClientDetailPanel({ client, onClose }: { client: any; onClose: () => void }) {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
@@ -452,6 +468,15 @@ function ClientDetailPanel({ client, onClose }: { client: any; onClose: () => vo
     { clientCodeSAP: client.clientCodeSAP, repCode: client.repCode },
     { staleTime: 60000 }
   );
+  const { data: seasonality, isLoading: loadingSeasonality } = trpc.clients.seasonality.useQuery(
+    { clientCodeSAP: client.clientCodeSAP, repCode: client.repCode },
+    { staleTime: 60000 }
+  );
+
+  const chartData = seasonality?.map((item: any) => ({
+    month: item.yearMonth,
+    kg: Number(item.totalKg) || 0,
+  })) || [];
 
   return (
     <Dialog open onOpenChange={() => onClose()}>
@@ -496,7 +521,7 @@ function ClientDetailPanel({ client, onClose }: { client: any; onClose: () => vo
         </div>
 
         <Tabs defaultValue="orders" className="mt-1">
-          <TabsList className="grid w-full grid-cols-2 h-9">
+          <TabsList className="grid w-full grid-cols-3 h-9">
             <TabsTrigger value="orders" className="text-xs">
               <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />
               Últimos Pedidos
@@ -504,6 +529,10 @@ function ClientDetailPanel({ client, onClose }: { client: any; onClose: () => vo
             <TabsTrigger value="products" className="text-xs">
               <Package className="h-3.5 w-3.5 mr-1.5" />
               Produtos
+            </TabsTrigger>
+            <TabsTrigger value="seasonality" className="text-xs">
+              <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
+              Sazonalidade
             </TabsTrigger>
           </TabsList>
 
@@ -612,6 +641,19 @@ function ClientDetailPanel({ client, onClose }: { client: any; onClose: () => vo
                     </tr>
                   </tfoot>
                 </table>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Seasonality Tab */}
+          <TabsContent value="seasonality" className="mt-3">
+            {loadingSeasonality ? (
+              <Skeleton className="h-64 w-full rounded-lg" />
+            ) : !chartData || chartData.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Nenhum dado de sazonalidade</p>
+            ) : (
+              <div className="w-full h-64">
+                <SeasonalityChart data={chartData} />
               </div>
             )}
           </TabsContent>

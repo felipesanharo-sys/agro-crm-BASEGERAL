@@ -100,3 +100,10 @@
 - [x] Aumentar de 6 para 12 últimos pedidos exibidos no card do cliente
 - [x] Atualizar skeletons de carregamento de 6 para 12
 - [x] Testar que não há bugs (14 testes passando)
+
+## Análise de Sazonalidade - Gráfico Mensal
+- [x] Criar query backend para dados mensais de sazonalidade (últimos 12 meses, volume KG)
+- [x] Criar rota tRPC clients.seasonality
+- [x] Implementar aba "Sazonalidade" no card do cliente
+- [x] Criar gráfico de barras com Recharts mostrando volume mensal
+- [x] Testar que gráfico exibe corretamente (14 testes passando)

@@ -371,6 +371,12 @@ export const appRouter = router({
         return db.getOrderProductDetails(input.orderCode, input.clientCodeSAP, input.repCode);
       }),
 
+    seasonality: protectedProcedure
+      .input(z.object({ clientCodeSAP: z.string(), repCode: z.string() }))
+      .query(async ({ input }) => {
+        return db.getClientSeasonality(input.clientCodeSAP, input.repCode);
+      }),
+
     benchmarking: adminProcedure
       .input(z.object({ statusFilter: z.string().optional(), channelFilter: z.string().optional() }).optional())
       .query(async ({ input }) => {

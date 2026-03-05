@@ -1029,3 +1029,22 @@ export async function resetPedidoNaTelaForInvoicedClients(yearMonths: string[]):
   }
   return resetCount;
 }
+
+
+// ---- Client Seasonality Analysis ----
+
+export async function getClientSeasonality(clientCodeSAP: string, repCode: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.execute(sql`
+    SELECT yearMonth,
+      SUM(CAST(kgInvoiced AS DECIMAL(14,2))) as totalKg,
+      COUNT(DISTINCT orderCode) as orderCount
+    FROM invoices
+    WHERE clientCodeSAP = ${clientCodeSAP} AND repCode = ${repCode}
+      AND invoiceDate >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+    GROUP BY yearMonth
+    ORDER BY yearMonth ASC
+  `);
+  return (result as any)[0] || [];
+}
