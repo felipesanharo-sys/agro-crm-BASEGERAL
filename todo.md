@@ -112,3 +112,8 @@
 - [x] Identificar erro SQL na query availableReps (coluna isGestor não existia)
 - [x] Remover coluna isGestor da query de aliases
 - [x] Testar que dropdown agora mostra VBRP901022 corretamente (14 testes passando)
+
+## Bug: Dropdown de RCs mostra apenas VBRP901022, deveria mostrar todos os RCs dos dados
+- [x] Corrigir query availableReps para retornar todos os RCs dos invoices
+- [x] Combinar dados de rep_aliases com invoices para lista completa (UNION com COALESCE)
+- [x] Testar que dropdown mostra todos os 12 RCs disponíveis (14 testes passando)
