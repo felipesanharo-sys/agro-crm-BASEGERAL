@@ -107,3 +107,8 @@
 - [x] Implementar aba "Sazonalidade" no card do cliente
 - [x] Criar gráfico de barras com Recharts mostrando volume mensal
 - [x] Testar que gráfico exibe corretamente (14 testes passando)
+
+## Bug Fix: Dropdown de RCs não aparecia ao gerar convite
+- [x] Identificar erro SQL na query availableReps (coluna isGestor não existia)
+- [x] Remover coluna isGestor da query de aliases
+- [x] Testar que dropdown agora mostra VBRP901022 corretamente (14 testes passando)

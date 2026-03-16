@@ -802,12 +802,12 @@ export const appRouter = router({
       if (aliasCount > 0) {
         // Usa aliases com enriquecimento de dados de invoices
         const rows = await d.execute(sqlTag`
-          SELECT ra.repCode, ra.alias as repName, ra.parentRepCode, ra.isGestor,
+          SELECT ra.repCode, ra.alias as repName, ra.parentRepCode,
             COUNT(DISTINCT i.clientCodeSAP) as totalClients,
             COALESCE(SUM(CAST(i.kgInvoiced AS DECIMAL(14,2))), 0) as totalKg
           FROM rep_aliases ra
           LEFT JOIN invoices i ON i.repCode = ra.repCode
-          GROUP BY ra.repCode, ra.alias, ra.parentRepCode, ra.isGestor
+          GROUP BY ra.repCode, ra.alias, ra.parentRepCode
           ORDER BY ra.alias ASC
         `);
         return ((rows as any)[0] || []).map((r: any) => ({
