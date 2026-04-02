@@ -382,6 +382,11 @@ export const appRouter = router({
         return db.getClientSeasonality(input.clientCodeSAP, input.repCode);
       }),
 
+    exportFunnel: adminProcedure.query(async () => {
+      const buffer = await db.generateSalesFunnelExcel();
+      return buffer.toString('base64');
+    }),
+
     benchmarking: adminProcedure
       .input(z.object({ statusFilter: z.string().optional(), channelFilter: z.string().optional() }).optional())
       .query(async ({ input }) => {

@@ -74,6 +74,57 @@ const STATUS_LABELS: Record<string, string> = {
   pedido_na_tela: "Pedido na Tela",
 };
 
+// ---- Export Funnel Button ----
+function ExportFunnelButton() {
+  const [isExporting, setIsExporting] = useState(false);
+  const exportMutation = trpc.clients.exportFunnel.useQuery(undefined, { enabled: false });
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const result = await exportMutation.refetch();
+      if (result.data) {
+        // Decode base64 to binary
+        const binaryString = atob(result.data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        // Create blob and download
+        const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Funil_Vendas_${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        toast.success("Funil de vendas exportado com sucesso!");
+      }
+    } catch (error) {
+      toast.error("Erro ao exportar funil de vendas");
+      console.error(error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleExport}
+      disabled={isExporting}
+      className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+      size="sm"
+    >
+      <FileText className="h-4 w-4" />
+      {isExporting ? "Exportando..." : "Extrair Funil de Vendas"}
+    </Button>
+  );
+}
+
 // ---- Reset All Em Acao Button ----
 function ResetAllEmAcaoButton() {
   const [isResetting, setIsResetting] = useState(false);
@@ -833,6 +884,9 @@ export default function ClientsPage() {
           </TabsContent>
 
           <TabsContent value="lista" className="mt-4">
+            <div className="mb-4 flex justify-end">
+              <ExportFunnelButton />
+            </div>
             <ClientListSection
               isAdmin={isAdmin}
               repOptions={repOptions}

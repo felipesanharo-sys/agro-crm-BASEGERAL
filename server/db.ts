@@ -1089,3 +1089,111 @@ export async function resetAllEmAcao(): Promise<number> {
   
   return resetCount;
 }
+
+
+// ---- Sales Funnel Export ----
+export async function getSalesFunnelData() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Get all clients with their latest status and volume
+  const result = await db.execute(sql`
+    SELECT
+      i.repCode,
+      i.repName,
+      i.clientCodeSAP,
+      i.clientName,
+      i.salesChannelGroup,
+      SUM(CAST(i.kgInvoiced AS DECIMAL(14,2))) as totalKg,
+      ca.actionType as latestStatus
+    FROM invoices i
+    LEFT JOIN (
+      SELECT clientCodeSAP, repCode, actionType
+      FROM client_actions ca
+      WHERE (clientCodeSAP, repCode, createdAt) IN (
+        SELECT clientCodeSAP, repCode, MAX(createdAt)
+        FROM client_actions
+        GROUP BY clientCodeSAP, repCode
+      )
+    ) ca ON i.clientCodeSAP = ca.clientCodeSAP AND i.repCode = ca.repCode
+    GROUP BY i.repCode, i.repName, i.clientCodeSAP, i.clientName, i.salesChannelGroup, ca.actionType
+    ORDER BY i.repCode, i.clientName
+  `);
+  
+  return (result as any)[0] || [];
+}
+
+
+// ---- Generate Sales Funnel Excel ----
+export async function generateSalesFunnelExcel() {
+  const funnelData = await getSalesFunnelData();
+  if (!funnelData || funnelData.length === 0) {
+    throw new Error("Nenhum dado disponível para gerar funil");
+  }
+
+  // Filter only clients with status: em_ciclo, alerta, pre_inativacao
+  const filteredData = funnelData.filter((row: any) => 
+    ['em_ciclo', 'alerta', 'pre_inativacao'].includes(row.latestStatus)
+  );
+
+  // Group by RC
+  const groupedByRc = new Map<string, any[]>();
+  for (const row of filteredData) {
+    if (!groupedByRc.has(row.repCode)) {
+      groupedByRc.set(row.repCode, []);
+    }
+    groupedByRc.get(row.repCode)!.push(row);
+  }
+
+  // Build rows with 20 blank lines between RCs
+  const rows: any[] = [];
+  let isFirst = true;
+  
+  const rcEntries = Array.from(groupedByRc.entries());
+  for (let i = 0; i < rcEntries.length; i++) {
+    const [repCode, clients] = rcEntries[i];
+    // Add 20 blank lines before each RC (except first)
+    if (!isFirst) {
+      for (let i = 0; i < 20; i++) {
+        rows.push(['', '', '', '', '', '']);
+      }
+    }
+    isFirst = false;
+
+    // Add RC's clients
+    for (const client of clients) {
+      rows.push([
+        client.repName || client.repCode,
+        client.clientName,
+        client.salesChannelGroup || '',
+        '',
+        '',
+        Math.round(Number(client.totalKg) || 0)
+      ]);
+    }
+  }
+
+  // Create workbook
+  const XLSX = await import('xlsx');
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['RC', 'Cliente', 'Canal de Vendas', '', '', 'Volume (KG)'],
+    ...rows
+  ]);
+
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 25 },
+    { wch: 30 },
+    { wch: 20 },
+    { wch: 15 },
+    { wch: 15 },
+    { wch: 15 }
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Funil de Vendas');
+
+  // Generate buffer
+  const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' });
+  return buffer;
+}

@@ -123,3 +123,10 @@
 - [x] Adicionar botão de reset na aba Benchmark
 - [x] Implementar confirmação antes de executar reset
 - [x] Testar que todos os clientes "Em Ação" voltam ao status anterior (14 testes passando)
+
+## Feature: Botão "Extrair Funil de Vendas" em Excel
+- [x] Criar função backend para buscar clientes em ciclo/alerta/pré-inativacao por RC
+- [x] Criar função para gerar Excel com xlsx (RC | Cliente | Canal | | | Volume)
+- [x] Adicionar 20 linhas em branco entre cada RC
+- [x] Criar botão verde acima da aba "Lista de Clientes"
+- [x] Testar download do Excel com dados corretos (14 testes passando)
