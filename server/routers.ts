@@ -371,6 +371,11 @@ export const appRouter = router({
         return db.getOrderProductDetails(input.orderCode, input.clientCodeSAP, input.repCode);
       }),
 
+    resetAllEmAcao: adminProcedure.mutation(async () => {
+      const resetCount = await db.resetAllEmAcao();
+      return { success: true, resetCount };
+    }),
+
     seasonality: protectedProcedure
       .input(z.object({ clientCodeSAP: z.string(), repCode: z.string() }))
       .query(async ({ input }) => {

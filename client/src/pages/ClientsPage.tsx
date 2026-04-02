@@ -74,6 +74,45 @@ const STATUS_LABELS: Record<string, string> = {
   pedido_na_tela: "Pedido na Tela",
 };
 
+// ---- Reset All Em Acao Button ----
+function ResetAllEmAcaoButton() {
+  const [isResetting, setIsResetting] = useState(false);
+  const resetMutation = trpc.clients.resetAllEmAcao.useMutation();
+  const utils = trpc.useUtils();
+
+  const handleReset = async () => {
+    if (!confirm("Tem certeza que deseja resetar TODOS os clientes 'Em Ação' para seu status anterior? Esta ação não pode ser desfeita.")) {
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      const result = await resetMutation.mutateAsync();
+      toast.success(`Reset concluído: ${result.resetCount} cliente(s) resetados`);
+      await utils.clients.benchmarking.invalidate();
+      await utils.clients.list.invalidate();
+    } catch (error) {
+      toast.error("Erro ao fazer reset. Tente novamente.");
+      console.error(error);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleReset}
+      disabled={isResetting}
+      variant="outline"
+      size="sm"
+      className="gap-2"
+    >
+      <RotateCcw className="h-4 w-4" />
+      {isResetting ? "Resetando..." : "Reset Geral Em Ação"}
+    </Button>
+  );
+}
+
 // ---- Health Ranking Section (Admin only) — Compact Table ----
 function HealthRankingSection({ onExtract }: { onExtract: (repCode: string, repName: string, status: string) => void }) {
   const { data: benchmarking, isLoading } = trpc.clients.benchmarking.useQuery(undefined, { staleTime: 120000 });
@@ -287,6 +326,11 @@ function HealthRankingSection({ onExtract }: { onExtract: (repCode: string, repN
           </div>
         </CardContent>
       </Card>
+
+      {/* Reset Button */}
+      <div className="mt-4 flex justify-end">
+        <ResetAllEmAcaoButton />
+      </div>
 
       {/* Legend */}
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground px-1">

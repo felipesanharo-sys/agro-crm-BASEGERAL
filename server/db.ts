@@ -1048,3 +1048,44 @@ export async function getClientSeasonality(clientCodeSAP: string, repCode: strin
   `);
   return (result as any)[0] || [];
 }
+
+
+// ---- Reset all "Em Ação" status to previous status ----
+export async function resetAllEmAcao(): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  
+  // Get all clients with "Em Ação" status (latest action)
+  const [emAcaoClients] = await db.execute(sql.raw(`
+    SELECT DISTINCT ca.clientCodeSAP, ca.repCode, ca.previousStatus
+    FROM client_actions ca
+    WHERE ca.actionType = 'em_acao'
+    AND (ca.clientCodeSAP, ca.repCode, ca.createdAt) IN (
+      SELECT clientCodeSAP, repCode, MAX(createdAt)
+      FROM client_actions
+      WHERE clientCodeSAP IS NOT NULL AND repCode IS NOT NULL
+      GROUP BY clientCodeSAP, repCode
+    )
+  `));
+  
+  if (!Array.isArray(emAcaoClients) || emAcaoClients.length === 0) return 0;
+  
+  let resetCount = 0;
+  for (const client of emAcaoClients as any[]) {
+    const { clientCodeSAP, repCode, previousStatus } = client;
+    if (!clientCodeSAP || !repCode) continue;
+    
+    // Insert reset action
+    await db.insert(clientActions).values({
+      clientCodeSAP,
+      repCode,
+      userId: 0,
+      actionType: "reset",
+      note: "Reset geral: voltando ao status anterior",
+      previousStatus: "em_acao",
+    });
+    resetCount++;
+  }
+  
+  return resetCount;
+}

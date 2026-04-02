@@ -117,3 +117,9 @@
 - [x] Corrigir query availableReps para retornar todos os RCs dos invoices
 - [x] Combinar dados de rep_aliases com invoices para lista completa (UNION com COALESCE)
 - [x] Testar que dropdown mostra todos os 12 RCs disponíveis (14 testes passando)
+
+## Feature: Botão de Reset Geral na Aba Benchmark
+- [x] Criar rota tRPC clients.resetAllEmAcao para limpar status "Em Ação"
+- [x] Adicionar botão de reset na aba Benchmark
+- [x] Implementar confirmação antes de executar reset
+- [x] Testar que todos os clientes "Em Ação" voltam ao status anterior (14 testes passando)
