@@ -130,3 +130,9 @@
 - [x] Adicionar 20 linhas em branco entre cada RC
 - [x] Criar botão verde acima da aba "Lista de Clientes"
 - [x] Testar download do Excel com dados corretos (14 testes passando)
+
+## Feature: Transformação de Dados no Upload
+- [x] Se coluna E = "Legado Prodap" → Coluna J (RC) = "Precision Farm"
+- [x] Gerar Pedido Código aleatório: 10 dígitos começando com "32" (ex: 3212345678)
+- [x] Pedido Item = sempre "10"
+- [x] Testar que dados Legado Prodap são importados corretamente (14 testes passando)

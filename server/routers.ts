@@ -209,6 +209,12 @@ export const appRouter = router({
                 mapped[dbCol] = String(val);
               }
             }
+            // Transformação: Se productFamily = "Legado Prodap" → RC = "Precision Farm"
+            if (mapped.productFamily && mapped.productFamily.toLowerCase().includes("legado prodap")) {
+              mapped.repCode = "Precision Farm";
+              mapped.repName = "Precision Farm";
+            }
+            
             // Atribuir RC padrão (VBRP901022) se repCode estiver vazio
             if (!mapped.repCode || mapped.repCode.trim() === "") {
               mapped.repCode = "VBRP901022";
@@ -216,6 +222,16 @@ export const appRouter = router({
                 mapped.repName = "João Fernando Ferreira S Carvalho";
               }
             }
+            
+            // Gerar Pedido Código aleatório (10 dígitos começando com 32) se vazio
+            if (!mapped.orderCode || mapped.orderCode.trim() === "") {
+              const randomPart = Math.floor(Math.random() * 100000000).toString().padStart(8, "0");
+              mapped.orderCode = "32" + randomPart;
+            }
+            
+            // Pedido Item sempre = "10"
+            mapped.orderItem = "10";
+            
             mapped.uploadId = logId;
             return mapped;
           }).filter(r => r.orderCode && r.orderItem && r.invoiceDate && r.repName && r.clientName && r.productName);
