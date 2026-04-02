@@ -1098,25 +1098,15 @@ export async function getSalesFunnelData() {
   
   // Get all clients with their latest status and volume
   const result = await db.execute(sql`
-    SELECT
+    SELECT DISTINCT
       i.repCode,
       i.repName,
       i.clientCodeSAP,
       i.clientName,
       i.salesChannelGroup,
-      SUM(CAST(i.kgInvoiced AS DECIMAL(14,2))) as totalKg,
-      ca.actionType as latestStatus
+      SUM(CAST(i.kgInvoiced AS DECIMAL(14,2))) as totalKg
     FROM invoices i
-    LEFT JOIN (
-      SELECT clientCodeSAP, repCode, actionType
-      FROM client_actions ca
-      WHERE (clientCodeSAP, repCode, createdAt) IN (
-        SELECT clientCodeSAP, repCode, MAX(createdAt)
-        FROM client_actions
-        GROUP BY clientCodeSAP, repCode
-      )
-    ) ca ON i.clientCodeSAP = ca.clientCodeSAP AND i.repCode = ca.repCode
-    GROUP BY i.repCode, i.repName, i.clientCodeSAP, i.clientName, i.salesChannelGroup, ca.actionType
+    GROUP BY i.repCode, i.repName, i.clientCodeSAP, i.clientName, i.salesChannelGroup
     ORDER BY i.repCode, i.clientName
   `);
   
@@ -1131,10 +1121,8 @@ export async function generateSalesFunnelExcel() {
     throw new Error("Nenhum dado disponível para gerar funil");
   }
 
-  // Filter only clients with status: em_ciclo, alerta, pre_inativacao
-  const filteredData = funnelData.filter((row: any) => 
-    ['em_ciclo', 'alerta', 'pre_inativacao'].includes(row.latestStatus)
-  );
+  // Use all data (no status filter)
+  const filteredData = funnelData;
 
   // Group by RC
   const groupedByRc = new Map<string, any[]>();
