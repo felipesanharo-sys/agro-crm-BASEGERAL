@@ -1243,7 +1243,7 @@ export async function getAceleracaoDataGroupedByClient(repCode?: string, startYm
     WHERE i.yearMonth >= ${ymStart} AND i.yearMonth <= ${ymEnd}
       ${repCondition}
       AND i.clientParentName IN (${clientList})
-    GROUP BY i.clientParentName, i.clientGroupCodeSAP
+    GROUP BY i.clientParentName
     ORDER BY totalKg DESC
   `);
   
