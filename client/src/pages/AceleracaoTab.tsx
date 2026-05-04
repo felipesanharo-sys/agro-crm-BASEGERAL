@@ -160,23 +160,12 @@ export default function AceleracaoTab({ repCodeFilter }: AceleracaoTabProps) {
     startYm: cycle.startYm,
     endYm: cycle.endYm,
   });
-  const { data: rawDataGrouped, isLoading: isLoadingGrouped } = trpc.aceleracao.summaryGrouped.useQuery({
-    repCodeFilter,
-    startYm: cycle.startYm,
-    endYm: cycle.endYm,
-  });
-  const [search, setSearch] = useState("");
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [changeFilter, setChangeFilter] = useState<string>("all"); // all, up, down, same
-  const [groupByClient, setGroupByClient] = useState(false);
 
-  const rows = groupByClient 
-    ? ((rawDataGrouped as any)?.rows || rawDataGrouped || [])
-    : ((rawData as any)?.rows || rawData || []);
-  const lastInvoiceDate = groupByClient 
-    ? ((rawDataGrouped as any)?.lastInvoiceDate || null)
-    : ((rawData as any)?.lastInvoiceDate || null);
+  const rows = (rawData as any)?.rows || rawData || [];
+  const lastInvoiceDate = (rawData as any)?.lastInvoiceDate || null;
 
   const lastDateFormatted = useMemo(() => {
     if (!lastInvoiceDate) return null;
@@ -280,18 +269,7 @@ export default function AceleracaoTab({ repCodeFilter }: AceleracaoTabProps) {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setGroupByClient(!groupByClient)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              groupByClient 
-                ? 'bg-blue-500/10 border border-blue-500/30 text-blue-600' 
-                : 'bg-muted border border-muted-foreground/20 text-muted-foreground hover:bg-muted/80'
-            }`}
-          >
-            {groupByClient ? 'Agrupado por Cliente' : 'Por Código'}
-          </button>
-          <Select value={cycleId} onValueChange={setCycleId}>
+        <Select value={cycleId} onValueChange={setCycleId}>
             <SelectTrigger className="w-[140px] h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -301,7 +279,6 @@ export default function AceleracaoTab({ repCodeFilter }: AceleracaoTabProps) {
               ))}
             </SelectContent>
           </Select>
-        </div>
       </div>
 
       {/* Category Summary Cards — showing CURRENT category distribution */}

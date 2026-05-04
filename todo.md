@@ -143,3 +143,9 @@
 - [x] Manter filtro por período e regras de aceleração
 - [x] Atualizar frontend para mostrar cliente com códigos expandíveis (toggle Agrupado por Cliente)
 - [x] Testar que somatório classifica cliente corretamente no programa (14 testes passando)
+
+## Bug Fix: Remover toggle e aplicar soma revenda+indústria no Programa Aceleração principal
+- [x] Remover toggle "Agrupado por Cliente" do frontend
+- [x] Remover query summaryGrouped
+- [x] Atualizar query principal getAceleracaoData para somar revenda+indústria automaticamente
+- [x] Testar que Programa Aceleração mostra volumes somados para clientes com ambos canais (14 testes passando)
