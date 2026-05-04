@@ -136,3 +136,10 @@
 - [x] Gerar Pedido Código aleatório: 10 dígitos começando com "32" (ex: 3212345678)
 - [x] Pedido Item = sempre "10"
 - [x] Testar que dados Legado Prodap são importados corretamente (14 testes passando)
+
+## Melhoria: Aba Aceleração - Agrupar por Cliente
+- [x] Criar query backend para agrupar por nome do cliente com soma de volume KG
+- [x] Filtrar apenas clientes com AMBOS: revenda E indústria
+- [x] Manter filtro por período e regras de aceleração
+- [x] Atualizar frontend para mostrar cliente com códigos expandíveis (toggle Agrupado por Cliente)
+- [x] Testar que somatório classifica cliente corretamente no programa (14 testes passando)

@@ -795,6 +795,17 @@ export const appRouter = router({
         if (!repCode && input?.repCodeFilter) repCode = input.repCodeFilter;
         return db.getAceleracaoData(repCode, input?.startYm, input?.endYm);
       }),
+    summaryGrouped: protectedProcedure
+      .input(z.object({
+        repCodeFilter: z.string().optional(),
+        startYm: z.string().optional(),
+        endYm: z.string().optional(),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        let repCode = await getUserRepCode(ctx.user);
+        if (!repCode && input?.repCodeFilter) repCode = input.repCodeFilter;
+        return db.getAceleracaoDataGroupedByClient(repCode, input?.startYm, input?.endYm);
+      }),
     monthly: protectedProcedure
       .input(z.object({
         groupCode: z.string(),

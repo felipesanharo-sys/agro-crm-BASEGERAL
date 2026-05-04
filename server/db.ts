@@ -1185,3 +1185,73 @@ export async function generateSalesFunnelExcel() {
   const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' });
   return buffer;
 }
+
+
+export async function getAceleracaoDataGroupedByClient(repCode?: string, startYm?: string, endYm?: string) {
+  const db = await getDb();
+  if (!db) return { rows: [], lastInvoiceDate: null };
+  const ymStart = startYm || '2025.03';
+  const ymEnd = endYm || '2026.02';
+  const repCondition = repCode ? sql`AND i.repCode = ${repCode}` : sql``;
+  
+  // Primeiro, encontrar clientes que têm AMBOS revenda E indústria
+  const [clientsWithBoth] = await db.execute(sql`
+    SELECT DISTINCT i.clientParentName
+    FROM invoices i
+    WHERE i.yearMonth >= ${ymStart} AND i.yearMonth <= ${ymEnd} ${repCondition}
+    GROUP BY i.clientParentName
+    HAVING 
+      SUM(CASE WHEN i.salesChannelGroup LIKE '%Revenda%' THEN 1 ELSE 0 END) > 0
+      AND SUM(CASE WHEN i.salesChannelGroup LIKE '%Indústria%' THEN 1 ELSE 0 END) > 0
+  `);
+  
+  const clientsWithBothNames = ((clientsWithBoth as any) || []).map((r: any) => r.clientParentName);
+  
+  if (clientsWithBothNames.length === 0) {
+    return { rows: [], lastInvoiceDate: null };
+  }
+  
+  // Preparar lista de clientes para usar em IN clause
+  const clientList = clientsWithBothNames.map((c: string) => `'${c.replace(/'/g, "''")}'`).join(',');
+  
+  // Buscar dados agrupados por cliente, somando revenda + indústria
+  const [result] = await db.execute(sql`
+    SELECT
+      i.clientParentName as clientName,
+      i.clientGroupCodeSAP as groupCode,
+      GROUP_CONCAT(DISTINCT CONCAT(i.clientCodeSAP, ' (', i.salesChannelGroup, ')')) as codes,
+      SUM(CAST(i.kgInvoiced AS DECIMAL(14,2))) as totalKg,
+      COUNT(DISTINCT i.clientCodeSAP) as subClients,
+      COUNT(DISTINCT i.yearMonth) as monthsActive,
+      MAX(i.clientCity) as city,
+      MAX(i.clientState) as state,
+      (
+        SELECT
+          CASE
+            WHEN lat.salesChannel LIKE 'Master%' THEN 'Master'
+            WHEN lat.salesChannel LIKE 'Especial Plus%' THEN 'Especial Plus'
+            WHEN lat.salesChannel LIKE 'Especial%' THEN 'Especial'
+            WHEN lat.salesChannel LIKE 'Essencial%' THEN 'Essencial'
+            ELSE lat.salesChannel
+          END
+        FROM invoices lat
+        WHERE lat.clientParentName = i.clientParentName
+          AND lat.yearMonth >= ${ymStart} AND i.yearMonth <= ${ymEnd}
+        ORDER BY lat.invoiceDate DESC LIMIT 1
+      ) as currentCategory
+    FROM invoices i
+    WHERE i.yearMonth >= ${ymStart} AND i.yearMonth <= ${ymEnd}
+      ${repCondition}
+      AND i.clientParentName IN (${clientList})
+    GROUP BY i.clientParentName, i.clientGroupCodeSAP
+    ORDER BY totalKg DESC
+  `);
+  
+  const [lastDateResult] = await db.execute(sql`
+    SELECT MAX(i.invoiceDate) as lastDate FROM invoices i
+    WHERE i.yearMonth >= ${ymStart} AND i.yearMonth <= ${ymEnd} ${repCondition}
+  `);
+  const lastInvoiceDate = (lastDateResult as any)?.[0]?.lastDate || null;
+  
+  return { rows: (result as unknown as any[]) || [], lastInvoiceDate };
+}
