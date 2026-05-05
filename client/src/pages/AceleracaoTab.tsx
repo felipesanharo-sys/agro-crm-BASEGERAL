@@ -163,6 +163,7 @@ export default function AceleracaoTab({ repCodeFilter }: AceleracaoTabProps) {
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [changeFilter, setChangeFilter] = useState<string>("all"); // all, up, down, same
+  const [search, setSearch] = useState<string>("");
 
   const rows = (rawData as any)?.rows || rawData || [];
   const lastInvoiceDate = (rawData as any)?.lastInvoiceDate || null;
