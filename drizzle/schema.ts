@@ -188,3 +188,71 @@ export const pageViews = mysqlTable("page_views", {
 
 export type PageView = typeof pageViews.$inferSelect;
 export type InsertPageView = typeof pageViews.$inferInsert;
+
+// Upload history and backup management
+export const uploadHistory = mysqlTable("upload_history", {
+  id: int("id").autoincrement().primaryKey(),
+  uploadedAt: timestamp("uploadedAt").defaultNow().notNull(),
+  recordCount: int("recordCount").notNull(),
+  status: varchar("status", { length: 32 }).default("success").notNull(), // success, failed, rolled_back
+  fileName: varchar("fileName", { length: 256 }),
+  createdBy: int("createdBy"), // userId who uploaded
+  notes: text("notes"),
+}, (table) => [
+  index("idx_uh_date").on(table.uploadedAt),
+  index("idx_uh_status").on(table.status),
+]);
+
+export type UploadHistory = typeof uploadHistory.$inferSelect;
+export type InsertUploadHistory = typeof uploadHistory.$inferInsert;
+
+// Backup of invoices before each upload
+export const invoicesBackup = mysqlTable("invoices_backup", {
+  id: int("id").autoincrement().primaryKey(),
+  uploadHistoryId: int("uploadHistoryId").notNull(),
+  orderCode: varchar("orderCode", { length: 64 }).notNull(),
+  orderItem: varchar("orderItem", { length: 32 }).notNull(),
+  invoiceDate: timestamp("invoiceDate").notNull(),
+  year: int("year"),
+  yearMonth: varchar("yearMonth", { length: 10 }),
+  month: varchar("month", { length: 4 }),
+  origin: varchar("origin", { length: 64 }),
+  regionalManagement: varchar("regionalManagement", { length: 128 }),
+  districtManagement: varchar("districtManagement", { length: 128 }),
+  supervision: varchar("supervision", { length: 128 }),
+  microRegion: varchar("microRegion", { length: 128 }),
+  repName: varchar("repName", { length: 256 }).notNull(),
+  repCode: varchar("repCode", { length: 32 }).notNull(),
+  repStatus: varchar("repStatus", { length: 32 }),
+  clientCodeDatasul: varchar("clientCodeDatasul", { length: 32 }),
+  clientCodeSAP: varchar("clientCodeSAP", { length: 32 }),
+  clientGroupCodeSAP: varchar("clientGroupCodeSAP", { length: 32 }),
+  clientName: varchar("clientName", { length: 256 }).notNull(),
+  clientParentName: varchar("clientParentName", { length: 256 }),
+  clientCity: varchar("clientCity", { length: 128 }),
+  clientState: varchar("clientState", { length: 4 }),
+  clientAddress: varchar("clientAddress", { length: 512 }),
+  clientPhone: varchar("clientPhone", { length: 64 }),
+  clientDocument: varchar("clientDocument", { length: 32 }),
+  atcResponsible: varchar("atcResponsible", { length: 256 }),
+  salesChannel: varchar("salesChannel", { length: 128 }),
+  salesChannelGroup: varchar("salesChannelGroup", { length: 128 }),
+  pittClassification: varchar("pittClassification", { length: 64 }),
+  productCodeDatasul: varchar("productCodeDatasul", { length: 32 }),
+  productCodeSAP: varchar("productCodeSAP", { length: 32 }),
+  productName: varchar("productName", { length: 256 }),
+  productGroup: varchar("productGroup", { length: 128 }),
+  productLine: varchar("productLine", { length: 128 }),
+  quantity: decimal("quantity", { precision: 18, scale: 4 }),
+  unit: varchar("unit", { length: 32 }),
+  unitPrice: decimal("unitPrice", { precision: 18, scale: 4 }),
+  totalPrice: decimal("totalPrice", { precision: 18, scale: 2 }),
+  volumeKg: decimal("volumeKg", { precision: 18, scale: 4 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_ib_upload").on(table.uploadHistoryId),
+  index("idx_ib_order").on(table.orderCode),
+]);
+
+export type InvoicesBackup = typeof invoicesBackup.$inferSelect;
+export type InsertInvoicesBackup = typeof invoicesBackup.$inferInsert;

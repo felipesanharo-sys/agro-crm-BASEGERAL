@@ -149,3 +149,19 @@
 - [x] Remover query summaryGrouped
 - [x] Atualizar query principal getAceleracaoData para somar revenda+indústria automaticamente
 - [x] Testar que Programa Aceleração mostra volumes somados para clientes com ambos canais (14 testes passando)
+
+## Feature: Sistema de Backup + Rollback do Último Upload
+- [ ] Criar tabelas invoices_backup e upload_history
+- [ ] Criar rota tRPC upload.rollback para reverter último upload
+- [ ] Adicionar backup automático antes de cada upload
+- [ ] Adicionar botão de rollback na página de Upload
+- [ ] Testar que rollback restaura dados corretamente
+
+
+## Feature: Sistema de Backup Automático + Rollback do Último Upload
+- [x] Criar tabelas upload_history e invoices_backup
+- [x] Adicionar funções de backup e rollback no backend
+- [x] Adicionar backup automático antes de cada upload
+- [x] Criar rotas tRPC rollbackLastUpload e getUploadHistory
+- [ ] Adicionar botão de rollback na interface (próximo passo)
+- [x] Testar que rollback restaura dados anteriores corretamente (14 testes passando)

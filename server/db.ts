@@ -10,7 +10,10 @@ import {
   notifications, InsertNotification,
   uploadLogs, InsertUploadLog,
   pageViews, InsertPageView,
+  uploadHistory, InsertUploadHistory,
+  invoicesBackup, InsertInvoicesBackup,
 } from "../drizzle/schema";
+
 import { ENV } from './_core/env';
 import crypto from 'crypto';
 
@@ -1277,4 +1280,98 @@ export async function getAceleracaoDataGroupedByClient(repCode?: string, startYm
   const lastInvoiceDate = (lastDateResult as any)?.[0]?.lastDate || null;
   
   return { rows: (result as unknown as any[]) || [], lastInvoiceDate };
+}
+
+
+// Backup and Rollback functions
+export async function createBackupBeforeUpload(db: any, fileName: string, userId?: number) {
+  try {
+    // Get all current invoices
+    const currentInvoices = await db.select().from(invoices);
+    
+    // Create upload history entry
+    const uploadHistoryResult = await db.insert(uploadHistory).values({
+      fileName,
+      recordCount: currentInvoices.length,
+      status: 'success',
+      createdBy: userId,
+      uploadedAt: new Date(),
+    });
+    
+    const uploadHistoryId = uploadHistoryResult[0].insertId;
+    
+    // Backup all current invoices
+    if (currentInvoices.length > 0) {
+      const backupData = currentInvoices.map((inv: any) => ({
+        uploadHistoryId,
+        ...inv,
+      }));
+      
+      await db.insert(invoicesBackup).values(backupData);
+    }
+    
+    return uploadHistoryId;
+  } catch (error) {
+    console.error('Error creating backup:', error);
+    throw error;
+  }
+}
+
+export async function rollbackLastUpload(db: any) {
+  try {
+    // Get the most recent upload history
+    const lastUpload = await db
+      .select()
+      .from(uploadHistory)
+      .orderBy(desc(uploadHistory.uploadedAt))
+      .limit(1);
+    
+    if (!lastUpload || lastUpload.length === 0) {
+      throw new Error('No upload history found');
+    }
+    
+    const uploadId = lastUpload[0].id;
+    
+    // Get backup data for this upload
+    const backupData = await db
+      .select()
+      .from(invoicesBackup)
+      .where(eq(invoicesBackup.uploadHistoryId, uploadId));
+    
+    // Delete all current invoices
+    await db.delete(invoices);
+    
+    // Restore from backup
+    if (backupData.length > 0) {
+      const restoreData = backupData.map(({ uploadHistoryId, ...rest }: any) => rest);
+      await db.insert(invoices).values(restoreData);
+    }
+    
+    // Mark upload as rolled back
+    await db.update(uploadHistory)
+      .set({ status: 'rolled_back' })
+      .where(eq(uploadHistory.id, uploadId));
+    
+    return {
+      success: true,
+      message: `Rollback completed. Restored ${backupData.length} invoices from ${lastUpload[0].uploadedAt}`,
+      restoredCount: backupData.length,
+    };
+  } catch (error) {
+    console.error('Error rolling back upload:', error);
+    throw error;
+  }
+}
+
+export async function getUploadHistory(db: any, limit = 10) {
+  try {
+    return await db
+      .select()
+      .from(uploadHistory)
+      .orderBy(desc(uploadHistory.uploadedAt))
+      .limit(limit);
+  } catch (error) {
+    console.error('Error fetching upload history:', error);
+    throw error;
+  }
 }

@@ -236,11 +236,23 @@ export const appRouter = router({
             return mapped;
           }).filter(r => r.orderCode && r.orderItem && r.invoiceDate && r.repName && r.clientName && r.productName);
 
+          // Create backup BEFORE deleting any data
+          const d = await db.getDb();
+          let backupId: number | null = null;
+          if (d) {
+            try {
+              backupId = await db.createBackupBeforeUpload(d, input.fileName, ctx.user.id);
+              console.log(`[Upload] Backup created with ID: ${backupId}`);
+            } catch (backupError) {
+              console.error("[Upload] Backup creation failed:", backupError);
+              // Continue with upload even if backup fails
+            }
+          }
+
           // Delete existing data for uploaded months to prevent duplicates
           const yearMonthsInUpload = Array.from(new Set(invoiceRows.map((r: any) => r.yearMonth).filter(Boolean)));
           let deletedRows = 0;
           if (yearMonthsInUpload.length > 0) {
-            const d = await db.getDb();
             if (d) {
               const { sql: sqlHelper } = await import("drizzle-orm");
               for (const ym of yearMonthsInUpload) {
@@ -300,6 +312,21 @@ export const appRouter = router({
       return db.getUploadLogs();
     }),
   }),
+    rollbackLastUpload: adminProcedure
+      .mutation(async ({ ctx }) => {
+        const d = await db.getDb();
+        if (!d) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database connection failed" });
+        
+        return await db.rollbackLastUpload(d);
+      }),
+    
+    getUploadHistory: adminProcedure
+      .query(async () => {
+        const d = await db.getDb();
+        if (!d) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database connection failed" });
+        
+        return await db.getUploadHistory(d);
+      }),
 
   // Client cycle data
   clients: router({
