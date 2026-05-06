@@ -894,7 +894,7 @@ export async function getAceleracaoData(repCode?: string, startYm?: string, endY
   const ymEnd = endYm || '2026.02';
   const repCondition = repCode ? sql`AND i.repCode = ${repCode}` : sql``;
   
-  // Buscar dados: incluir TODOS os canais (Revenda, Indústria, Revenda + Indústria)
+  // Buscar dados: incluir apenas Revenda e Indústria (excluir Consumidor)
   const [result] = await db.execute(sql.raw(`
     SELECT
       i.clientGroupCodeSAP as groupCode,
@@ -916,11 +916,13 @@ export async function getAceleracaoData(repCode?: string, startYm?: string, endY
           END
         FROM invoices lat
         WHERE lat.clientGroupCodeSAP = i.clientGroupCodeSAP
+          AND (lat.salesChannelGroup LIKE '%Revenda%' OR lat.salesChannelGroup LIKE '%Indústria%')
         ORDER BY lat.invoiceDate DESC LIMIT 1
       ) as currentCategory
     FROM invoices i
     WHERE i.yearMonth >= '${ymStart}' AND i.yearMonth <= '${ymEnd}'
       ${repCode ? `AND i.repCode = '${repCode}'` : ''}
+      AND (i.salesChannelGroup LIKE '%Revenda%' OR i.salesChannelGroup LIKE '%Indústria%')
     GROUP BY i.clientGroupCodeSAP ORDER BY totalKg DESC
   `));
   
