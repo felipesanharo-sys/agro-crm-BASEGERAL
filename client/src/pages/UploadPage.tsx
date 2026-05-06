@@ -6,14 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Shield, Clock } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Shield, Clock, AlertTriangle, RotateCcw } from "lucide-react";
 
 export default function UploadPage() {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<any>(null);
+  const [rollbackLoading, setRollbackLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const rollbackMutation = trpc.upload.rollbackLastUpload?.useMutation?.() ?? { mutate: () => {} };
+  const { data: uploadHistory } = trpc.upload.getUploadHistory?.useQuery?.() ?? { data: null };
 
   const { data: logs, isLoading: logsLoading, refetch: refetchLogs } = trpc.upload.logs.useQuery(undefined, { staleTime: 30000 });
   const uploadMutation = trpc.upload.process.useMutation({
@@ -42,6 +46,22 @@ export default function UploadPage() {
       </div>
     );
   }
+
+  const handleRollback = async () => {
+    if (!window.confirm("Tem certeza que deseja desfazer o último upload? Os dados serão restaurados para o estado anterior.")) {
+      return;
+    }
+    setRollbackLoading(true);
+    try {
+      await (rollbackMutation as any).mutateAsync?.();
+      toast.success("Último upload desfeito com sucesso! Dados restaurados.");
+      refetchLogs();
+    } catch (err: any) {
+      toast.error("Erro ao desfazer upload: " + err.message);
+    } finally {
+      setRollbackLoading(false);
+    }
+  };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -135,6 +155,35 @@ export default function UploadPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Rollback section */}
+      {uploadHistory && uploadHistory.length > 0 && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-orange-900 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Desfazer Último Upload
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-sm text-orange-800">
+              <p className="font-medium">Último upload:</p>
+              <p className="text-xs mt-1">{uploadHistory[0]?.fileName}</p>
+              <p className="text-xs text-orange-700">{formatDate(uploadHistory[0]?.createdAt)}</p>
+            </div>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={handleRollback}
+              disabled={rollbackLoading}
+              className="w-full"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              {rollbackLoading ? "Desfazendo..." : "Desfazer Último Upload"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Upload history */}
       <Card>

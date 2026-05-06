@@ -165,3 +165,9 @@
 - [x] Criar rotas tRPC rollbackLastUpload e getUploadHistory
 - [ ] Adicionar botão de rollback na interface (próximo passo)
 - [x] Testar que rollback restaura dados anteriores corretamente (14 testes passando)
+
+## Feature: Botão de Rollback na Página de Upload
+- [x] Adicionar botão "Desfazer Último Upload" na interface de Upload
+- [x] Mostrar histórico de uploads com datas e nomes de arquivos
+- [x] Implementar confirmação antes de fazer rollback
+- [x] Exibir mensagem de sucesso após rollback (14 testes passando)

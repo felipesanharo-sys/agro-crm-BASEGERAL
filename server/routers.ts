@@ -311,7 +311,6 @@ export const appRouter = router({
     logs: adminProcedure.query(async () => {
       return db.getUploadLogs();
     }),
-  }),
     rollbackLastUpload: adminProcedure
       .mutation(async ({ ctx }) => {
         const d = await db.getDb();
@@ -327,6 +326,7 @@ export const appRouter = router({
         
         return await db.getUploadHistory(d);
       }),
+    }),
 
   // Client cycle data
   clients: router({
