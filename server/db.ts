@@ -894,24 +894,7 @@ export async function getAceleracaoData(repCode?: string, startYm?: string, endY
   const ymEnd = endYm || '2026.02';
   const repCondition = repCode ? sql`AND i.repCode = ${repCode}` : sql``;
   
-  // Primeiro, encontrar clientes que têm AMBOS revenda E indústria
-  const [clientsWithBoth] = await db.execute(sql`
-    SELECT DISTINCT i.clientParentName
-    FROM invoices i
-    WHERE i.yearMonth >= ${ymStart} AND i.yearMonth <= ${ymEnd} ${repCondition}
-    GROUP BY i.clientParentName
-    HAVING 
-      SUM(CASE WHEN i.salesChannelGroup LIKE '%Revenda%' THEN 1 ELSE 0 END) > 0
-      AND SUM(CASE WHEN i.salesChannelGroup LIKE '%Indústria%' THEN 1 ELSE 0 END) > 0
-  `);
-  
-  const clientsWithBothNames = ((clientsWithBoth as any) || []).map((r: any) => r.clientParentName);
-  
-  // Buscar dados: para clientes com ambos canais, somar revenda + indústria; para outros, apenas revenda
-  const clientList = clientsWithBothNames.length > 0 
-    ? clientsWithBothNames.map((c: string) => `'${c.replace(/'/g, "''")}'`).join(',')
-    : "'__EMPTY__'";
-    
+  // Buscar dados: incluir TODOS os canais (Revenda, Indústria, Revenda + Indústria)
   const [result] = await db.execute(sql.raw(`
     SELECT
       i.clientGroupCodeSAP as groupCode,
@@ -933,16 +916,11 @@ export async function getAceleracaoData(repCode?: string, startYm?: string, endY
           END
         FROM invoices lat
         WHERE lat.clientGroupCodeSAP = i.clientGroupCodeSAP
-          AND lat.salesChannelGroup LIKE '%Revenda%'
         ORDER BY lat.invoiceDate DESC LIMIT 1
       ) as currentCategory
     FROM invoices i
     WHERE i.yearMonth >= '${ymStart}' AND i.yearMonth <= '${ymEnd}'
       ${repCode ? `AND i.repCode = '${repCode}'` : ''}
-      AND (
-        i.salesChannelGroup LIKE '%Revenda%'
-        OR (i.clientParentName IN (${clientList}) AND i.salesChannelGroup LIKE '%Indústria%')
-      )
     GROUP BY i.clientGroupCodeSAP ORDER BY totalKg DESC
   `));
   

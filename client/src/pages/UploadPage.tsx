@@ -16,10 +16,11 @@ export default function UploadPage() {
   const [rollbackLoading, setRollbackLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const rollbackMutation = trpc.upload.rollbackLastUpload?.useMutation?.() ?? { mutate: () => {} };
-  const { data: uploadHistory } = trpc.upload.getUploadHistory?.useQuery?.() ?? { data: null };
+  const rollbackMutation = trpc.upload.rollbackLastUpload.useMutation();
+  const { data: uploadHistory } = trpc.upload.getUploadHistory.useQuery();
 
   const { data: logs, isLoading: logsLoading, refetch: refetchLogs } = trpc.upload.logs.useQuery(undefined, { staleTime: 30000 });
+  const { refetch: refetchUploadHistory } = trpc.upload.getUploadHistory.useQuery();
   const uploadMutation = trpc.upload.process.useMutation({
     onSuccess: (data) => {
       setResult(data);
@@ -28,6 +29,7 @@ export default function UploadPage() {
       const resetMsg = data.pedidoResetCount ? ` | ${data.pedidoResetCount} clientes saíram de "Pedido na Tela"` : "";
       toast.success(`Upload concluído: ${data.rowsInserted} registros inseridos${resetMsg}`);
       refetchLogs();
+      refetchUploadHistory();
     },
     onError: (err) => {
       setUploading(false);
@@ -157,33 +159,37 @@ export default function UploadPage() {
       </Card>
 
       {/* Rollback section */}
-      {uploadHistory && uploadHistory.length > 0 && (
-        <Card className="border-orange-200 bg-orange-50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-orange-900 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-              Desfazer Último Upload
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-sm text-orange-800">
-              <p className="font-medium">Último upload:</p>
-              <p className="text-xs mt-1">{uploadHistory[0]?.fileName}</p>
-              <p className="text-xs text-orange-700">{formatDate(uploadHistory[0]?.createdAt)}</p>
-            </div>
-            <Button 
-              variant="destructive" 
-              size="sm" 
-              onClick={handleRollback}
-              disabled={rollbackLoading}
-              className="w-full"
-            >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              {rollbackLoading ? "Desfazendo..." : "Desfazer Último Upload"}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+      <Card className="border-orange-200 bg-orange-50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold text-orange-900 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Desfazer Último Upload
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {uploadHistory && uploadHistory.length > 0 ? (
+            <>
+              <div className="text-sm text-orange-800">
+                <p className="font-medium">Último upload:</p>
+                <p className="text-xs mt-1">{uploadHistory[0]?.fileName}</p>
+                <p className="text-xs text-orange-700">{formatDate(uploadHistory[0]?.createdAt)}</p>
+              </div>
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={handleRollback}
+                disabled={rollbackLoading}
+                className="w-full"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                {rollbackLoading ? "Desfazendo..." : "Desfazer Último Upload"}
+              </Button>
+            </>
+          ) : (
+            <p className="text-sm text-orange-700">Nenhum backup disponível. Faça um upload para criar um backup.</p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Upload history */}
       <Card>
