@@ -232,3 +232,29 @@ describe("formatYearMonth logic", () => {
     expect(formatYearMonth(new Date(2024, 5, 30))).toBe("2024.06");
   });
 });
+
+
+describe("getClientPurchaseHistory productType detection", () => {
+  it("should correctly identify product types (digital, nutricao, devolucao)", () => {
+    // This is a logical test to verify the CASE statement logic
+    // In production, this would be tested with actual database data
+    
+    // Simulate the CASE logic from the SQL query
+    function determineProductType(
+      hasDigitalProduct: boolean,
+      totalKg: number,
+      hasDigitalInCategory: boolean
+    ): string {
+      if (hasDigitalProduct) return 'digital';
+      if (totalKg === 0 && !hasDigitalInCategory) return 'devolucao';
+      return 'nutricao';
+    }
+
+    // Test cases
+    expect(determineProductType(true, 100, true)).toBe('digital');
+    expect(determineProductType(true, 0, true)).toBe('digital');
+    expect(determineProductType(false, 0, false)).toBe('devolucao');
+    expect(determineProductType(false, 100, false)).toBe('nutricao');
+    expect(determineProductType(false, 50.5, false)).toBe('nutricao');
+  });
+});

@@ -151,13 +151,18 @@ export async function getClientPurchaseHistory(repCode?: string, channelFilter?:
       COUNT(DISTINCT i.orderCode) as orderCount,
       SUM(CAST(i.kgInvoiced AS DECIMAL(14,2))) as totalKg,
       SUM(CAST(i.revenueWithTax AS DECIMAL(14,2))) as totalRevenue,
-      MIN(i.invoiceDate) as firstPurchaseDate
+      MIN(i.invoiceDate) as firstPurchaseDate,
+      CASE
+        WHEN SUM(CASE WHEN i.productCategory = 'digital' THEN 1 ELSE 0 END) > 0 THEN 'digital'
+        WHEN SUM(CAST(i.kgInvoiced AS DECIMAL(14,2))) = 0 AND SUM(CASE WHEN i.productCategory = 'digital' THEN 1 ELSE 0 END) = 0 THEN 'devolucao'
+        ELSE 'nutricao'
+      END as productType
     FROM invoices i
     ${whereClause}
     GROUP BY i.clientCodeSAP, i.clientName, i.clientCity, i.clientState, i.clientPhone,
              i.clientDocument, i.salesChannel, i.salesChannelGroup, i.repCode, i.repName
     ORDER BY lastPurchaseDate DESC
-  `);
+  `)
   return (result as any)[0] || [];
 }
 
