@@ -1131,7 +1131,16 @@ function ClientListSection({
             </CardContent>
           </Card>
         ) : (
-          clients.map(client => (
+          clients.filter((c: any) => {
+            const q = searchQuery.toLowerCase();
+            return !searchQuery || c.clientName.toLowerCase().includes(q) || c.clientCity?.toLowerCase().includes(q) || c.clientCodeSAP?.toLowerCase().includes(q) || c.repName?.toLowerCase().includes(q);
+          }).sort((a: any, b: any) => {
+            const statusOrder: Record<string, number> = { ativo: 0, em_ciclo: 1, alerta: 2, pre_inativacao: 3, inativo: 4 };
+            const aStatus = a.manualStatus ? (a.manualStatus === 'em_acao' ? -1 : -2) : (statusOrder[a.status as string] || 5);
+            const bStatus = b.manualStatus ? (b.manualStatus === 'em_acao' ? -1 : -2) : (statusOrder[b.status as string] || 5);
+            if (aStatus !== bStatus) return aStatus - bStatus;
+            return a.clientName.localeCompare(b.clientName);
+          }).map((client: any) => (
             <Card
               key={`${client.clientCodeSAP}-${client.repCode}`}
               className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
