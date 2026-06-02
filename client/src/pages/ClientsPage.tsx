@@ -39,12 +39,16 @@ const formatCurrency = (val: number) => (!val ? "R$ 0" : `R$ ${val.toLocaleStrin
 const formatPct = (val: number) => `${Math.round(val)}%`;
 
 // ---- Sales Channel Badge ----
-function SalesChannelBadge({ channel, size = "sm" }: { channel: string; size?: "sm" | "md" }) {
+function SalesChannelBadge({ channel, productType, size = "sm" }: { channel: string; productType?: string; size?: "sm" | "md" }) {
   const label = channel
     .replace(" Revenda", "")
     .replace(" Cooperativa", " Coop.")
     .replace(" Feedmills", " Feed.")
     .replace("Consumidor/Outros", "Consumidor");
+  
+  const productTypeLabel = productType === 'digital' ? '+ Digital' :
+                           productType === 'devolucao' ? '+ Devolução' :
+                           productType === 'nutricao' ? '+ Nutrição' : '';
   
   const colors: Record<string, string> = {
     "Master": "bg-[oklch(0.93_0.05_280)] text-[oklch(0.35_0.15_280)]",
@@ -59,7 +63,7 @@ function SalesChannelBadge({ channel, size = "sm" }: { channel: string; size?: "
   
   return (
     <span className={`inline-flex items-center rounded-full font-medium mt-0.5 ${colorClass} ${sizeClass}`}>
-      {label}
+      {label} {productTypeLabel}
     </span>
   );
 }
@@ -1150,22 +1154,9 @@ function ClientListSection({
                         <FileText className="h-2.5 w-2.5 shrink-0" />
                         SAP: {client.clientCodeSAP}
                       </div>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        {client.salesChannel && (
-                          <SalesChannelBadge channel={client.salesChannel} />
-                        )}
-                        {client.productType && (
-                          <span className={`inline-flex items-center rounded-full font-medium text-[9px] px-1.5 py-0.5 ${
-                            client.productType === 'digital' ? 'bg-[oklch(0.92_0.05_260)] text-[oklch(0.35_0.15_260)]' :
-                            client.productType === 'devolucao' ? 'bg-[oklch(0.92_0.06_30)] text-[oklch(0.35_0.15_30)]' :
-                            'bg-[oklch(0.92_0.05_140)] text-[oklch(0.35_0.15_140)]'
-                          }`}>
-                            {client.productType === 'digital' ? '📱 Digital' :
-                             client.productType === 'devolucao' ? '↩️ Devolução' :
-                             '🥗 Nutrição'}
-                          </span>
-                        )}
-                      </div>
+                      {client.salesChannel && (
+                        <SalesChannelBadge channel={client.salesChannel} productType={client.productType} />
+                      )}
                     </div>
                     <StatusBadge status={client.status} manualStatus={client.manualStatus} />
                   </div>

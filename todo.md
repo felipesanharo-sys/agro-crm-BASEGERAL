@@ -151,11 +151,11 @@
 - [x] Testar que Programa Aceleração mostra volumes somados para clientes com ambos canais (14 testes passando)
 
 ## Feature: Sistema de Backup + Rollback do Último Upload
-- [ ] Criar tabelas invoices_backup e upload_history
-- [ ] Criar rota tRPC upload.rollback para reverter último upload
-- [ ] Adicionar backup automático antes de cada upload
-- [ ] Adicionar botão de rollback na página de Upload
-- [ ] Testar que rollback restaura dados corretamente
+- [x] Criar tabelas invoices_backup e upload_history
+- [x] Criar rota tRPC upload.rollback para reverter último upload
+- [x] Adicionar backup automático antes de cada upload
+- [x] Adicionar botão de rollback na página de Upload
+- [x] Testar que rollback restaura dados corretamente
 
 
 ## Feature: Sistema de Backup Automático + Rollback do Último Upload
@@ -171,3 +171,10 @@
 - [x] Mostrar histórico de uploads com datas e nomes de arquivos
 - [x] Implementar confirmação antes de fazer rollback
 - [x] Exibir mensagem de sucesso após rollback (14 testes passando)
+
+
+## Feature: Detecção de Tipo de Produto (Digital, Nutrição, Devolução)
+- [x] Modificar query getClientPurchaseHistory para adicionar coluna productType
+- [x] Implementar lógica: digital (productCategory='digital'), nutrição (kg>0), devolução (kg=0 sem digital)
+- [x] Adicionar badge visual no card do cliente com cores e ícones diferentes
+- [x] Adicionar teste para validar lógica de detecção (15 testes passando)
