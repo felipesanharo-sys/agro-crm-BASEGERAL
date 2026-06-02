@@ -163,8 +163,8 @@
 - [x] Adicionar funções de backup e rollback no backend
 - [x] Adicionar backup automático antes de cada upload
 - [x] Criar rotas tRPC rollbackLastUpload e getUploadHistory
-- [ ] Adicionar botão de rollback na interface (próximo passo)
-- [x] Testar que rollback restaura dados anteriores corretamente (14 testes passando)
+- [x] Adicionar botão de rollback na interface
+- [x] Testar que rollback restaura dados anteriores corretamente (15 testes passando)
 
 ## Feature: Botão de Rollback na Página de Upload
 - [x] Adicionar botão "Desfazer Último Upload" na interface de Upload
@@ -178,3 +178,10 @@
 - [x] Implementar lógica: digital (productCategory='digital'), nutrição (kg>0), devolução (kg=0 sem digital)
 - [x] Adicionar badge visual no card do cliente com cores e ícones diferentes
 - [x] Adicionar teste para validar lógica de detecção (15 testes passando)
+
+
+## Feature: Layout do Tipo de Produto Integrado ao Canal
+- [x] Modificar SalesChannelBadge para incluir productType como parâmetro
+- [x] Adicionar sufixo ao badge (ex: 'Consumidor + Digital', 'Revenda + Nutrição')
+- [x] Remover badge separado de tipo de produto
+- [x] Testar que layout aparece corretamente (15 testes passando)

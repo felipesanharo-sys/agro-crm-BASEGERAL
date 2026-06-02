@@ -118,6 +118,7 @@ async function buildClientWithCycle(client: any, now: number, actionMap?: Map<st
     manualStatus: action?.actionType || null,
     manualNote: action?.note || null,
     manualStatusDate: action?.createdAt ? new Date(action.createdAt).getTime() : null,
+    productType: client.productType || 'nutricao',
   };
 }
 
