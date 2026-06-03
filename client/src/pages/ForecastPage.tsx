@@ -5,7 +5,6 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { trpc } from "@/lib/trpc";
 import { TrendingUp, Target, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ForecastPage() {

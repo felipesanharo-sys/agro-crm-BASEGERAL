@@ -189,11 +189,11 @@
 
 ## Feature: Aba de Previsão com Dashboard Visual
 - [x] Criar tabela forecast_data no banco de dados para armazenar dados de previsão
-- [ ] Implementar função para importar dados da planilha Google Sheets
+- [x] Implementar função para importar dados da planilha Google Sheets
 - [x] Criar rotas tRPC para buscar dados de previsão consolidados e por RC
 - [x] Implementar componente ForecastPage com dashboard visual
 - [x] Adicionar gráficos (Meta vs Previsão vs Realizado)
 - [x] Adicionar tabela com detalhes por RC
 - [x] Adicionar filtro de RC
 - [x] Adicionar aba Previsão à navegação principal
-- [ ] Testar e validar funcionalidade
+- [x] Adicionar botão de sincronização com Google Sheets
