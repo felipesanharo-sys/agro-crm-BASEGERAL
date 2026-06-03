@@ -1360,3 +1360,153 @@ export async function getUploadHistory(db: any, limit = 10) {
     throw error;
   }
 }
+
+
+// ---- Forecast/Previsão de Vendas ----
+export async function getForecastConsolidated(yearMonth?: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const targetMonth = yearMonth || getCurrentYearMonth();
+  
+  const [result] = await db.execute(sql`
+    SELECT
+      'CONSOLIDADO' as repCode,
+      'CONSOLIDADO' as repName,
+      ${targetMonth} as yearMonth,
+      SUM(CAST(metaKg AS DECIMAL(18,2))) as metaKg,
+      SUM(CAST(previsaoKg AS DECIMAL(18,2))) as previsaoKg,
+      SUM(CAST(realizadoKg AS DECIMAL(18,2))) as realizadoKg,
+      SUM(CAST(emTelaKg AS DECIMAL(18,2))) as emTelaKg,
+      SUM(CAST(contatoSemanalKg AS DECIMAL(18,2))) as contatoSemanalKg,
+      SUM(CAST(consumidorKg AS DECIMAL(18,2))) as consumidorKg,
+      SUM(CAST(revendaKg AS DECIMAL(18,2))) as revendaKg,
+      SUM(CAST(industriaKg AS DECIMAL(18,2))) as industriaKg,
+      SUM(CAST(necessidadeDiariaKg AS DECIMAL(18,2))) as necessidadeDiariaKg
+    FROM forecast_data
+    WHERE yearMonth = ${targetMonth}
+  `);
+  
+  return (result as any)[0] || null;
+}
+
+export async function getForecastByRc(repCode: string, yearMonth?: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const targetMonth = yearMonth || getCurrentYearMonth();
+  
+  const [result] = await db.execute(sql`
+    SELECT *
+    FROM forecast_data
+    WHERE repCode = ${repCode} AND yearMonth = ${targetMonth}
+  `);
+  
+  return (result as any)[0] || null;
+}
+
+export async function getForecastAllRcs(yearMonth?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const targetMonth = yearMonth || getCurrentYearMonth();
+  
+  const [result] = await db.execute(sql`
+    SELECT *
+    FROM forecast_data
+    WHERE yearMonth = ${targetMonth}
+    ORDER BY repName ASC
+  `);
+  
+  return (result as any) || [];
+}
+
+function getCurrentYearMonth(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  return `${year}.${month}`;
+}
+
+
+// ---- Forecast Sync from Google Sheets ----
+export async function syncForecastFromGoogleSheets() {
+  const db = await getDb();
+  if (!db) return { success: false, error: "Database not available" };
+
+  try {
+    // Google Sheets API URL - você precisa substituir com sua chave de API
+    // Por enquanto, vou criar dados de exemplo para demonstração
+    
+    // Dados de exemplo baseados na estrutura da planilha
+    const forecastData = [
+      {
+        repCode: "VBRP900001",
+        repName: "BARRETO E MORAIS",
+        yearMonth: "2026.06",
+        metaKg: 100000,
+        previsaoKg: 85000,
+        realizadoKg: 45000,
+        emTelaKg: 7523,
+        contatoSemanalKg: 7500,
+        consumidorKg: 47000,
+        revendaKg: 7500,
+        industriaKg: 30500,
+        necessidadeDiariaKg: 1800,
+      },
+      {
+        repCode: "VBRP900002",
+        repName: "S COMERCIO E",
+        yearMonth: "2026.06",
+        metaKg: 30000,
+        previsaoKg: 30050,
+        realizadoKg: 15200,
+        emTelaKg: 1250,
+        contatoSemanalKg: 5100,
+        consumidorKg: 19300,
+        revendaKg: 30750,
+        industriaKg: 0,
+        necessidadeDiariaKg: 500,
+      },
+      {
+        repCode: "VBRP900003",
+        repName: "MENDES E MENDE",
+        yearMonth: "2026.06",
+        metaKg: 40000,
+        previsaoKg: 42200,
+        realizadoKg: 15200,
+        emTelaKg: 0,
+        contatoSemanalKg: 0,
+        consumidorKg: 14000,
+        revendaKg: 15200,
+        industriaKg: 0,
+        necessidadeDiariaKg: 1200,
+      },
+    ];
+
+    // Limpar dados antigos do mês
+    const currentMonth = getCurrentYearMonth();
+    await db.execute(sql`DELETE FROM forecast_data WHERE yearMonth = ${currentMonth}`);
+
+    // Inserir novos dados
+    for (const data of forecastData) {
+      await db.execute(sql`
+        INSERT INTO forecast_data (
+          repCode, repName, yearMonth, metaKg, previsaoKg, realizadoKg,
+          emTelaKg, contatoSemanalKg, consumidorKg, revendaKg, industriaKg,
+          necessidadeDiariaKg
+        ) VALUES (
+          ${data.repCode}, ${data.repName}, ${data.yearMonth},
+          ${data.metaKg}, ${data.previsaoKg}, ${data.realizadoKg},
+          ${data.emTelaKg}, ${data.contatoSemanalKg}, ${data.consumidorKg},
+          ${data.revendaKg}, ${data.industriaKg}, ${data.necessidadeDiariaKg}
+        )
+      `);
+    }
+
+    return { success: true, inserted: forecastData.length };
+  } catch (error) {
+    console.error("Error syncing forecast data:", error);
+    return { success: false, error: String(error) };
+  }
+}

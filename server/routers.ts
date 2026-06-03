@@ -987,6 +987,28 @@ export const appRouter = router({
         return db.getUserDailyActivity(input.userId, input.days || 30);
       }),
   }),
+  forecast: router({
+    consolidated: adminProcedure
+      .input(z.object({ yearMonth: z.string().optional() }).optional())
+      .query(async ({ input }) => {
+        return db.getForecastConsolidated(input?.yearMonth);
+      }),
+    byRc: adminProcedure
+      .input(z.object({ repCode: z.string(), yearMonth: z.string().optional() }))
+      .query(async ({ input }) => {
+        return db.getForecastByRc(input.repCode, input.yearMonth);
+      }),
+    allRcs: adminProcedure
+      .input(z.object({ yearMonth: z.string().optional() }).optional())
+      .query(async ({ input }) => {
+        return db.getForecastAllRcs(input?.yearMonth);
+      }),
+    sync: adminProcedure.mutation(async () => {
+      return db.syncForecastFromGoogleSheets();
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
+
+// Adicionar rota sync ao forecast router - será feito via sed

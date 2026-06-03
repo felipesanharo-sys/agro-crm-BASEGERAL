@@ -256,3 +256,30 @@ export const invoicesBackup = mysqlTable("invoices_backup", {
 
 export type InvoicesBackup = typeof invoicesBackup.$inferSelect;
 export type InsertInvoicesBackup = typeof invoicesBackup.$inferInsert;
+
+
+// Forecast data from Google Sheets - Previsão de Vendas
+export const forecastData = mysqlTable("forecast_data", {
+  id: int("id").autoincrement().primaryKey(),
+  repCode: varchar("repCode", { length: 32 }).notNull(),
+  repName: varchar("repName", { length: 256 }).notNull(),
+  yearMonth: varchar("yearMonth", { length: 10 }).notNull(), // Format: YYYY.MM
+  metaKg: decimal("metaKg", { precision: 18, scale: 2 }).default(0), // BDG - Budget
+  previsaoKg: decimal("previsaoKg", { precision: 18, scale: 2 }).default(0), // Previsão de faturamento
+  realizadoKg: decimal("realizadoKg", { precision: 18, scale: 2 }).default(0), // Faturado
+  emTelaKg: decimal("emTelaKg", { precision: 18, scale: 2 }).default(0), // Pedido em tela
+  contatoSemanalKg: decimal("contatoSemanalKg", { precision: 18, scale: 2 }).default(0), // Contato semanal
+  consumidorKg: decimal("consumidorKg", { precision: 18, scale: 2 }).default(0), // Consumidor
+  revendaKg: decimal("revendaKg", { precision: 18, scale: 2 }).default(0), // Revenda
+  industriaKg: decimal("industriaKg", { precision: 18, scale: 2 }).default(0), // Indústria
+  necessidadeDiariaKg: decimal("necessidadeDiariaKg", { precision: 18, scale: 2 }).default(0), // KG/dia necessário
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("idx_forecast_rep").on(table.repCode),
+  index("idx_forecast_month").on(table.yearMonth),
+  index("idx_forecast_rep_month").on(table.repCode, table.yearMonth),
+] as any);
+
+export type ForecastData = typeof forecastData.$inferSelect;
+export type InsertForecastData = typeof forecastData.$inferInsert;
