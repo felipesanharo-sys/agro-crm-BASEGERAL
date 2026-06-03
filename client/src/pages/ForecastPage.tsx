@@ -3,11 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { trpc } from "@/lib/trpc";
-import { TrendingUp, Target, CheckCircle2, AlertCircle } from "lucide-react";
+import { TrendingUp, Target, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useState, useMemo } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ForecastPage() {
   const [selectedRc, setSelectedRc] = useState<string>("consolidado");
   const [yearMonth, setYearMonth] = useState<string>("");
+  const { toast } = useToast();
+  const syncMutation = trpc.forecast.sync.useMutation();
 
   // Fetch consolidated data
   const { data: consolidated, isLoading: consolidatedLoading } = trpc.forecast.consolidated.useQuery(
@@ -29,6 +34,27 @@ export default function ForecastPage() {
 
   const currentData = selectedRc === "consolidado" ? consolidated : rcData;
   const isLoading = selectedRc === "consolidado" ? consolidatedLoading : false;
+
+  const handleSync = async () => {
+    try {
+      await syncMutation.mutateAsync();
+      toast({
+        title: "Sucesso",
+        description: "Dados sincronizados com a planilha!",
+      });
+      // Refetch data
+      await Promise.all([
+        trpc.useUtils().forecast.consolidated.invalidate(),
+        trpc.useUtils().forecast.allRcs.invalidate(),
+      ]);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Falha ao sincronizar dados",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Prepare chart data
   const chartData = useMemo(() => {
@@ -66,7 +92,7 @@ export default function ForecastPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Previsão de Vendas</h1>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
           <Select value={selectedRc} onValueChange={setSelectedRc}>
             <SelectTrigger className="w-48">
               <SelectValue />
@@ -80,6 +106,16 @@ export default function ForecastPage() {
               ))}
             </SelectContent>
           </Select>
+          <Button
+            onClick={handleSync}
+            disabled={syncMutation.isPending}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
+            {syncMutation.isPending ? 'Sincronizando...' : 'Sincronizar'}
+          </Button>
         </div>
       </div>
 
