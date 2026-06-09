@@ -78,7 +78,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-2">
               <BarChart3 className="h-8 w-8 text-primary" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-center">Agro CRM BA03</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-center">Agro CRM BA02</h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
               Gestão inteligente de ciclo de compras B2B no agronegócio
             </p>
