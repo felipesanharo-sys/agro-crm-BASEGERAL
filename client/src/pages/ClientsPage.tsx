@@ -762,10 +762,6 @@ function ClientDetailPanel({ client, onClose }: { client: any; onClose: () => vo
             )}
           </TabsContent>
 
-          {/* Evolucao YTD Tab */}
-          <TabsContent value="evolucao" className="mt-3">
-            <YtdRankingSection isAdmin={false} />
-          </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
@@ -882,7 +878,7 @@ export default function ClientsPage() {
 
       {isAdmin && (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 h-9">
+          <TabsList className="grid w-full grid-cols-3 h-9">
             <TabsTrigger value="ranking" className="text-xs">
               <Trophy className="h-3.5 w-3.5 mr-1.5" />
               Ranking Saúde
@@ -890,6 +886,10 @@ export default function ClientsPage() {
             <TabsTrigger value="lista" className="text-xs">
               <Users className="h-3.5 w-3.5 mr-1.5" />
               Lista de Clientes
+            </TabsTrigger>
+            <TabsTrigger value="evolucao" className="text-xs">
+              <LineChart className="h-3.5 w-3.5 mr-1.5" />
+              Evolução
             </TabsTrigger>
           </TabsList>
 
@@ -920,6 +920,10 @@ export default function ClientsPage() {
               onExtract={handleExtract}
               statusCounts={statusCounts}
             />
+          </TabsContent>
+
+          <TabsContent value="evolucao" className="mt-4">
+            <YtdRankingSection isAdmin={true} repOptions={repOptions} />
           </TabsContent>
         </Tabs>
       )}
