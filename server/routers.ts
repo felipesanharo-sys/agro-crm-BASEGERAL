@@ -432,6 +432,17 @@ export const appRouter = router({
       return buffer.toString('base64');
     }),
 
+    ytdRanking: protectedProcedure
+      .input(z.object({ repCode: z.string().optional(), salesChannelGroup: z.string().optional() }))
+      .query(async ({ ctx, input }) => {
+        const isAdmin = ctx.user.role === 'admin';
+        let repCode = input.repCode;
+        if (!isAdmin) {
+          repCode = await getUserRepCode(ctx.user);
+        }
+        return db.getYtdRanking(repCode || undefined, input.salesChannelGroup || undefined);
+      }),
+
     benchmarking: adminProcedure
       .input(z.object({ statusFilter: z.string().optional(), channelFilter: z.string().optional() }).optional())
       .query(async ({ input }) => {

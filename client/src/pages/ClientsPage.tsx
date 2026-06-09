@@ -12,10 +12,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import YtdRankingSection from "@/components/YtdRankingSection";
 import {
   Search, Phone, MapPin, Calendar, Package, TrendingUp, RotateCcw,
   MessageSquarePlus, Users, Trophy, ShoppingCart, DollarSign, Weight,
-  Hash, ChevronDown, ChevronUp, FileText, Copy, Share2, Filter
+  Hash, ChevronDown, ChevronUp, FileText, Copy, Share2, Filter, LineChart
 } from "lucide-react";
 
 const STATUS_TABS = [
@@ -620,7 +621,7 @@ function ClientDetailPanel({ client, onClose }: { client: any; onClose: () => vo
         </div>
 
         <Tabs defaultValue="orders" className="mt-1">
-          <TabsList className="grid w-full grid-cols-3 h-9">
+          <TabsList className="grid w-full grid-cols-4 h-9">
             <TabsTrigger value="orders" className="text-xs">
               <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />
               Últimos Pedidos
@@ -632,6 +633,10 @@ function ClientDetailPanel({ client, onClose }: { client: any; onClose: () => vo
             <TabsTrigger value="seasonality" className="text-xs">
               <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
               Sazonalidade
+            </TabsTrigger>
+            <TabsTrigger value="evolucao" className="text-xs">
+              <LineChart className="h-3.5 w-3.5 mr-1.5" />
+              Evolução
             </TabsTrigger>
           </TabsList>
 
@@ -755,6 +760,11 @@ function ClientDetailPanel({ client, onClose }: { client: any; onClose: () => vo
                 <SeasonalityChart data={chartData} />
               </div>
             )}
+          </TabsContent>
+
+          {/* Evolucao YTD Tab */}
+          <TabsContent value="evolucao" className="mt-3">
+            <YtdRankingSection isAdmin={false} />
           </TabsContent>
         </Tabs>
       </DialogContent>

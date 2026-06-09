@@ -1510,3 +1510,133 @@ export async function syncForecastFromGoogleSheets() {
     return { success: false, error: String(error) };
   }
 }
+
+
+// ============================================================
+// Função getYtdRanking - Aba Evolução YTD
+// ============================================================
+
+export async function getYtdRanking(repCode?: string, salesChannelGroup?: string): Promise<{
+  clientCodeSAP: string;
+  clientName: string;
+  repCode: string;
+  repAlias: string;
+  kg2025: number;
+  kg2026: number;
+  variation: number;
+  diffKg: number;
+  status: string;
+  isNewClient: boolean;
+  isRecovered: boolean;
+  isAbsent: boolean;
+}[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const today = new Date();
+  const ytdCutMonth = today.getMonth() + 1;
+
+  const repFilter = repCode ? sql`AND i.repCode = ${repCode}` : sql``;
+  const channelFilter = salesChannelGroup ? sql`AND i.salesChannelGroup = ${salesChannelGroup}` : sql``;
+
+  const result = await db.execute(sql`
+    SELECT
+      i.clientCodeSAP,
+      MAX(i.clientName) as clientName,
+      MAX(i.repCode) as repCode,
+      COALESCE(
+        MAX(CASE WHEN ra.parentRepCode IS NOT NULL THEN parent_ra.alias ELSE ra.alias END),
+        MAX(i.repName)
+      ) as repAlias,
+      COALESCE(
+        MAX(CASE WHEN ra.parentRepCode IS NOT NULL THEN ra.parentRepCode ELSE ra.repCode END),
+        MAX(i.repCode)
+      ) as effectiveRepCode,
+      SUM(CASE
+        WHEN YEAR(i.invoiceDate) = 2025
+          AND MONTH(i.invoiceDate) < ${ytdCutMonth}
+        THEN CAST(i.kgInvoiced AS DECIMAL(14,2))
+        ELSE 0
+      END) as kg2025,
+      SUM(CASE
+        WHEN YEAR(i.invoiceDate) = 2026
+          AND MONTH(i.invoiceDate) < ${ytdCutMonth}
+        THEN CAST(i.kgInvoiced AS DECIMAL(14,2))
+        ELSE 0
+      END) as kg2026,
+      (SELECT MAX(hist.invoiceDate) FROM invoices hist
+       WHERE hist.clientCodeSAP = i.clientCodeSAP
+         AND CAST(hist.kgInvoiced AS DECIMAL(14,2)) > 0
+      ) as lastPurchaseDate,
+      (SELECT ca.actionType FROM client_actions ca
+       INNER JOIN (
+         SELECT clientCodeSAP, MAX(createdAt) as maxCreated
+         FROM client_actions
+         GROUP BY clientCodeSAP
+       ) latest ON ca.clientCodeSAP = latest.clientCodeSAP
+         AND ca.createdAt = latest.maxCreated
+       WHERE ca.clientCodeSAP = i.clientCodeSAP
+         AND ca.actionType IN ('em_acao', 'pedido_na_tela')
+       LIMIT 1
+      ) as manualStatus,
+      CASE WHEN EXISTS (
+        SELECT 1 FROM invoices hist
+        WHERE hist.clientCodeSAP = i.clientCodeSAP
+          AND hist.invoiceDate < '2025-01-01'
+          AND CAST(hist.kgInvoiced AS DECIMAL(14,2)) > 0
+      ) THEN 1 ELSE 0 END as has_history_before_2025
+    FROM invoices i
+    LEFT JOIN rep_aliases ra ON ra.repCode = i.repCode
+    LEFT JOIN rep_aliases parent_ra ON parent_ra.repCode = ra.parentRepCode
+    WHERE i.invoiceDate >= '2025-01-01'
+      AND MONTH(i.invoiceDate) < ${ytdCutMonth}
+      ${repFilter}
+      ${channelFilter}
+    GROUP BY i.clientCodeSAP
+    HAVING kg2025 > 0 OR kg2026 > 0
+    ORDER BY clientName ASC
+  `);
+
+  const rows = ((result as any)[0] || []) as any[];
+
+  return rows.map((r: any) => {
+    const kg2025 = Number(r.kg2025 || 0);
+    const kg2026 = Number(r.kg2026 || 0);
+    const hasHistoryBefore2025 = Number(r.has_history_before_2025) === 1;
+    const variation = kg2025 > 0
+      ? Math.round(((kg2026 - kg2025) / kg2025) * 1000) / 10
+      : kg2026 > 0 ? 100 : 0;
+    const isNewClient = kg2025 === 0 && kg2026 > 0 && !hasHistoryBefore2025;
+    const isRecovered = kg2025 === 0 && kg2026 > 0 && hasHistoryBefore2025;
+    const isAbsent = kg2025 > 0 && kg2026 === 0;
+    const manualStatus = r.manualStatus as string | null;
+    let computedStatus: string;
+    if (manualStatus === 'em_acao' || manualStatus === 'pedido_na_tela') {
+      computedStatus = manualStatus;
+    } else if (r.lastPurchaseDate) {
+      const lastPurchaseMs = new Date(r.lastPurchaseDate).getTime();
+      const daysSince = Math.floor((Date.now() - lastPurchaseMs) / (1000 * 60 * 60 * 24));
+      computedStatus = daysSince >= 180 ? 'inativo'
+        : daysSince >= 150 ? 'pre_inativacao'
+        : daysSince >= 90 ? 'alerta'
+        : daysSince >= 72 ? 'em_ciclo'
+        : 'ativo';
+    } else {
+      computedStatus = 'ativo';
+    }
+    return {
+      clientCodeSAP: r.clientCodeSAP,
+      clientName: r.clientName,
+      repCode: r.effectiveRepCode || r.repCode,
+      repAlias: r.repAlias || r.repCode,
+      kg2025,
+      kg2026,
+      variation,
+      diffKg: Math.round(kg2026 - kg2025),
+      status: computedStatus,
+      isNewClient,
+      isRecovered,
+      isAbsent,
+    };
+  }).sort((a: any, b: any) => b.variation - a.variation);
+}
