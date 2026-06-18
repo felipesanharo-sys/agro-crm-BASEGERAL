@@ -283,3 +283,28 @@ export const forecastData = mysqlTable("forecast_data", {
 
 export type ForecastData = typeof forecastData.$inferSelect;
 export type InsertForecastData = typeof forecastData.$inferInsert;
+
+
+// Prospects - Prospecção de novos clientes
+export const prospects = mysqlTable("prospects", {
+  id: int("id").autoincrement().primaryKey(),
+  repCode: varchar("repCode", { length: 32 }).notNull(),
+  companyName: varchar("companyName", { length: 256 }).notNull(),
+  contactName: varchar("contactName", { length: 256 }),
+  channel: mysqlEnum("channel", ["revenda", "consumidor", "industria"]).notNull(),
+  potentialKg: decimal("potentialKg", { precision: 14, scale: 2 }),
+  potentialBrl: decimal("potentialBrl", { precision: 14, scale: 2 }),
+  stage: mysqlEnum("stage", ["contato_inicial", "proposta_enviada", "em_negociacao", "ganho", "perdido"])
+    .notNull()
+    .default("contato_inicial"),
+  notes: text("notes"),
+  nextContactDate: timestamp("nextContactDate"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("idx_prospect_rep").on(table.repCode),
+  index("idx_prospect_stage").on(table.stage),
+]);
+
+export type Prospect = typeof prospects.$inferSelect;
+export type InsertProspect = typeof prospects.$inferInsert;

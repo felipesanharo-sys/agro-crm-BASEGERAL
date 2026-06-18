@@ -12,6 +12,7 @@ import {
   pageViews, InsertPageView,
   uploadHistory, InsertUploadHistory,
   invoicesBackup, InsertInvoicesBackup,
+  prospects, InsertProspect,
 } from "../drizzle/schema";
 
 import { ENV } from './_core/env';
@@ -1639,4 +1640,68 @@ export async function getYtdRanking(repCode?: string, salesChannelGroup?: string
       isAbsent,
     };
   }).sort((a: any, b: any) => b.variation - a.variation);
+}
+
+
+// ---- Prospects ----
+
+export async function getProspects(
+  repCode: string | null,
+  stage?: string,
+  channel?: string
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions: any[] = [];
+  if (repCode) conditions.push(sql`repCode = ${repCode}`);
+  if (stage)   conditions.push(sql`stage = ${stage}`);
+  if (channel) conditions.push(sql`channel = ${channel}`);
+
+  const whereClause = conditions.length > 0
+    ? sql`WHERE ${sql.join(conditions, sql` AND `)}`
+    : sql``;
+
+  const result = await db.execute(sql`
+    SELECT id, repCode, companyName, contactName, channel, potentialKg, potentialBrl,
+           stage, notes, nextContactDate, createdAt, updatedAt
+    FROM prospects
+    ${whereClause}
+    ORDER BY createdAt DESC
+  `);
+  return (result as any)[0] || [];
+}
+
+export async function createProspect(data: InsertProspect) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const result = await db.insert(prospects).values(data);
+  return (result as any)[0].insertId as number;
+}
+
+export async function updateProspect(
+  id: number,
+  repCode: string,
+  isAdmin: boolean,
+  data: Partial<InsertProspect>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const whereClause = isAdmin
+    ? eq(prospects.id, id)
+    : and(eq(prospects.id, id), eq(prospects.repCode, repCode));
+  await db.update(prospects).set({ ...data, updatedAt: new Date() }).where(whereClause);
+}
+
+export async function deleteProspect(
+  id: number,
+  repCode: string,
+  isAdmin: boolean
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const whereClause = isAdmin
+    ? eq(prospects.id, id)
+    : and(eq(prospects.id, id), eq(prospects.repCode, repCode));
+  await db.delete(prospects).where(whereClause);
 }

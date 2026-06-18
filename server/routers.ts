@@ -124,6 +124,87 @@ async function buildClientWithCycle(client: any, now: number, actionMap?: Map<st
 
 // ── Router ─────────────────────────────────────────────────────────────
 
+
+export const prospectsRouter = router({
+  list: protectedProcedure
+    .input(z.object({
+      stage:   z.string().optional(),
+      channel: z.string().optional(),
+      repCode: z.string().optional(), // admin only: filtrar por RC específico
+    }))
+    .query(async ({ ctx, input }) => {
+      const isAdmin = ctx.user.role === "admin";
+      let repCode: string | null = null;
+      if (!isAdmin) {
+        repCode = ctx.user.repCode ?? null;
+      } else if (input.repCode) {
+        repCode = input.repCode;
+      }
+      return db.getProspects(repCode, input.stage, input.channel);
+    }),
+
+  create: protectedProcedure
+    .input(z.object({
+      companyName:     z.string().min(1).max(256),
+      contactName:     z.string().max(256).optional(),
+      channel:         z.enum(["revenda", "consumidor", "industria"]),
+      potentialKg:     z.number().positive().optional(),
+      potentialBrl:    z.number().positive().optional(),
+      stage:           z.enum(["contato_inicial", "proposta_enviada", "em_negociacao", "ganho", "perdido"])
+                        .default("contato_inicial"),
+      notes:           z.string().optional(),
+      nextContactDate: z.string().optional(), // ISO date string (YYYY-MM-DD)
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const repCode = ctx.user.repCode;
+      if (!repCode) throw new TRPCError({ code: "FORBIDDEN", message: "Usuário sem código RC vinculado" });
+      const id = await db.createProspect({
+        repCode,
+        companyName:     input.companyName,
+        contactName:     input.contactName ?? null,
+        channel:         input.channel,
+        potentialKg:     input.potentialKg  ? String(input.potentialKg)  : null,
+        potentialBrl:    input.potentialBrl ? String(input.potentialBrl) : null,
+        stage:           input.stage,
+        notes:           input.notes ?? null,
+        nextContactDate: input.nextContactDate ? new Date(input.nextContactDate) : null,
+      });
+      return { id };
+    }),
+
+  update: protectedProcedure
+    .input(z.object({
+      id:              z.number().int().positive(),
+      companyName:     z.string().min(1).max(256).optional(),
+      contactName:     z.string().max(256).optional().nullable(),
+      channel:         z.enum(["revenda", "consumidor", "industria"]).optional(),
+      potentialKg:     z.number().positive().optional().nullable(),
+      potentialBrl:    z.number().positive().optional().nullable(),
+      stage:           z.enum(["contato_inicial", "proposta_enviada", "em_negociacao", "ganho", "perdido"]).optional(),
+      notes:           z.string().optional().nullable(),
+      nextContactDate: z.string().optional().nullable(), // ISO date string ou null
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const isAdmin = ctx.user.role === "admin";
+      const repCode = ctx.user.repCode ?? "";
+      const { id, nextContactDate, potentialKg, potentialBrl, ...rest } = input;
+      const data: Record<string, any> = { ...rest };
+      if (potentialKg  !== undefined) data.potentialKg  = potentialKg  !== null ? String(potentialKg)  : null;
+      if (potentialBrl !== undefined) data.potentialBrl = potentialBrl !== null ? String(potentialBrl) : null;
+      if (nextContactDate !== undefined) data.nextContactDate = nextContactDate ? new Date(nextContactDate) : null;
+      await db.updateProspect(id, repCode, isAdmin, data);
+      return { success: true };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      const isAdmin = ctx.user.role === "admin";
+      const repCode = ctx.user.repCode ?? "";
+      await db.deleteProspect(input.id, repCode, isAdmin);
+      return { success: true };
+    }),
+});
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -998,6 +1079,7 @@ export const appRouter = router({
         return db.getUserDailyActivity(input.userId, input.days || 30);
       }),
   }),
+  prospects: prospectsRouter,
   forecast: router({
     consolidated: adminProcedure
       .input(z.object({ yearMonth: z.string().optional() }).optional())
@@ -1018,6 +1100,7 @@ export const appRouter = router({
       return db.syncForecastFromGoogleSheets();
     }),
   }),
+
 });
 
 export type AppRouter = typeof appRouter;

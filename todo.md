@@ -197,3 +197,15 @@
 - [x] Adicionar filtro de RC
 - [x] Adicionar aba Previsão à navegação principal
 - [x] Adicionar botão de sincronização com Google Sheets
+
+## Integração Prospects (Nova)
+
+- [x] Integrar schema de prospects ao drizzle/schema.ts
+- [x] Executar migração SQL para criar tabela prospects
+- [x] Adicionar funções de banco (getProspects, createProspect, updateProspect, deleteProspect) ao server/db.ts
+- [x] Adicionar router tRPC para prospects ao server/routers.ts
+- [x] Copiar ProspectsPage.tsx para client/src/pages/
+- [x] Adicionar rota /prospects ao App.tsx
+- [x] Adicionar item "Prospects" ao menu do DashboardLayout.tsx
+- [x] Testar integração completa (criar, editar, deletar prospects)
+- [x] Salvar checkpoint com integração Prospects

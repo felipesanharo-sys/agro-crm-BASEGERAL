@@ -16,6 +16,7 @@ import AceleracaoPage from "./pages/AceleracaoPage";
 import UsersPage from "./pages/UsersPage";
 import InvitePage from "./pages/InvitePage";
 import ForecastPage from "./pages/ForecastPage";
+import ProspectsPage from "./pages/ProspectsPage";
 import { usePageTracker } from "./hooks/usePageTracker";
 
 function DashboardRoutes() {
@@ -29,6 +30,7 @@ function DashboardRoutes() {
         <Route path="/historico" component={HistoryPage} />
         <Route path="/aceleracao" component={AceleracaoPage} />
         <Route path="/previsao" component={ForecastPage} />
+        <Route path="/prospects" component={ProspectsPage} />
         <Route path="/upload" component={UploadPage} />
         <Route path="/notificacoes" component={NotificationsPage} />
         <Route path="/configuracoes" component={SettingsPage} />

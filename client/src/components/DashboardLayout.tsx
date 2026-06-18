@@ -26,7 +26,7 @@ import { trpc } from "@/lib/trpc";
 import {
   Users, Package, TrendingUp, Rocket,
   Upload, Bell, LogOut, PanelLeft, Settings, ChevronRight,
-  Shield, BarChart3, History, UserCog
+  Shield, BarChart3, History, UserCog, Target
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -36,6 +36,7 @@ import { Badge } from "./ui/badge";
 
 const rcMenuItems = [
   { icon: Users, label: "Clientes", path: "/clientes" },
+  { icon: Target, label: "Prospects", path: "/prospects" },
   { icon: History, label: "Histórico", path: "/historico" },
   { icon: Rocket, label: "Aceleração", path: "/aceleracao" },
   { icon: Package, label: "Produtos", path: "/produtos" },
@@ -44,6 +45,7 @@ const rcMenuItems = [
 
 const managerMenuItems = [
   { icon: Users, label: "Clientes", path: "/clientes" },
+  { icon: Target, label: "Prospects", path: "/prospects" },
   { icon: History, label: "Histórico", path: "/historico" },
   { icon: Rocket, label: "Aceleração", path: "/aceleracao" },
   { icon: Package, label: "Produtos", path: "/produtos" },
@@ -219,7 +221,7 @@ function DashboardLayoutContent({ children, setSidebarWidth }: { children: React
         {/* Bottom tab bar */}
         <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur safe-area-pb">
           <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
-            {(isAdmin ? managerMenuItems.slice(0, 5) : rcMenuItems).map(item => {
+            {(isAdmin ? managerMenuItems.slice(0, 6) : rcMenuItems).map(item => {
               const isActive = location.startsWith(item.path);
               return (
                 <button
