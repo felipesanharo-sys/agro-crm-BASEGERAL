@@ -163,6 +163,9 @@ export default function YtdRankingSection({ repOptions, isAdmin }: Props) {
   const toggleFilter = (f: VariationFilter) =>
     setVariationFilter(prev => prev === f ? "all" : f);
 
+  // Se isAdmin mas repOptions vazio, tenta buscar
+  const shouldShowRcFilter = isAdmin && repOptions && repOptions.length > 0;
+
   return (
     <div className="space-y-3">
       {/* Cards de resumo — 2x2 grid para caber os 4 cards */}
@@ -375,9 +378,9 @@ export default function YtdRankingSection({ repOptions, isAdmin }: Props) {
             className="pl-8 h-8 text-xs"
           />
         </div>
-        {isAdmin && repOptions && repOptions.length > 0 && (
+        {shouldShowRcFilter && (
           <Select value={rcFilter || "all"} onValueChange={v => setRcFilter(v === "all" ? "" : v)}>
-            <SelectTrigger className="h-8 text-xs w-36">
+            <SelectTrigger className="h-8 text-xs w-full">
               <SelectValue placeholder="Todos os RCs" />
             </SelectTrigger>
             <SelectContent>

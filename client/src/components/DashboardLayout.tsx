@@ -35,21 +35,21 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 
 const rcMenuItems = [
+  { icon: TrendingUp, label: "Previsão", path: "/previsao" },
   { icon: Users, label: "Clientes", path: "/clientes" },
   { icon: Target, label: "Prospects", path: "/prospects" },
   { icon: History, label: "Histórico", path: "/historico" },
   { icon: Rocket, label: "Aceleração", path: "/aceleracao" },
   { icon: Package, label: "Produtos", path: "/produtos" },
-  { icon: TrendingUp, label: "Previsão", path: "/previsao" },
 ];
 
 const managerMenuItems = [
+  { icon: TrendingUp, label: "Previsão", path: "/previsao" },
   { icon: Users, label: "Clientes", path: "/clientes" },
   { icon: Target, label: "Prospects", path: "/prospects" },
   { icon: History, label: "Histórico", path: "/historico" },
   { icon: Rocket, label: "Aceleração", path: "/aceleracao" },
   { icon: Package, label: "Produtos", path: "/produtos" },
-  { icon: TrendingUp, label: "Previsão", path: "/previsao" },
   { icon: Upload, label: "Upload", path: "/upload" },
   { icon: UserCog, label: "Usuários", path: "/usuarios" },
 ];
