@@ -232,12 +232,12 @@ export const appRouter = router({
       const d = await db.getDb();
       if (!d) return [];
       const { sql } = await import("drizzle-orm");
-      const rows = await d.execute(sql`SELECT repCode, alias, parentRepCode FROM rep_aliases ORDER BY alias`);
+      const rows = await d.execute(sql`SELECT DISTINCT i.repCode, i.repName FROM invoices i ORDER BY i.repName ASC`);
       return ((rows as any)[0] || []).map((r: any) => ({
         repCode: r.repCode,
-        alias: r.alias,
-        repName: r.alias,
-        parentRepCode: r.parentRepCode || null,
+        alias: r.repName,
+        repName: r.repName,
+        parentRepCode: null,
       }));
     }),
   }),

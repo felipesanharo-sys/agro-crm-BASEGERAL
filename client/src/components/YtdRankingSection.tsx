@@ -147,8 +147,8 @@ export default function YtdRankingSection({ repOptions, isAdmin }: Props) {
   if (isLoading) {
     return (
       <div className="space-y-3">
-        <Skeleton className="h-20 w-48 rounded-lg" />
-        <Skeleton className="h-64 w-48 rounded-lg" />
+        <Skeleton className="h-20 w-full rounded-lg" />
+        <Skeleton className="h-64 w-full rounded-lg" />
       </div>
     );
   }
@@ -276,7 +276,7 @@ export default function YtdRankingSection({ repOptions, isAdmin }: Props) {
                       <span className="text-[10px] text-muted-foreground">{rc.total} clientes</span>
                     </div>
                     {/* Barra empilhada */}
-                    <div className="flex h-4 w-48 rounded overflow-hidden gap-px">
+                    <div className="flex h-4 w-full rounded overflow-hidden gap-px">
                       {pGrow > 0 && (
                         <div
                           title={`Crescendo: ${rc.growing} (${pGrow.toFixed(0)}%)`}
@@ -382,7 +382,7 @@ export default function YtdRankingSection({ repOptions, isAdmin }: Props) {
         </div>
         {shouldShowRcFilter && (
           <Select value={rcFilter || "all"} onValueChange={v => setRcFilter(v === "all" ? "" : v)}>
-            <SelectTrigger className="h-8 text-xs w-48">
+            <SelectTrigger className="h-8 text-xs w-full">
               <SelectValue placeholder="Todos os RCs" />
             </SelectTrigger>
             <SelectContent>
@@ -403,7 +403,7 @@ export default function YtdRankingSection({ repOptions, isAdmin }: Props) {
       <Card className="overflow-hidden">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-48 text-xs">
+            <table className="w-full text-xs">
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th
