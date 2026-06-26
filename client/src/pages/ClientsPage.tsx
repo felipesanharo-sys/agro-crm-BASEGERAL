@@ -790,7 +790,7 @@ export default function ClientsPage() {
   const [extractRepName, setExtractRepName] = useState("");
   const [extractStatus, setExtractStatus] = useState("");
 
-  const { data: repOptions } = trpc.profile.getRepOptions.useQuery(undefined, {
+  const { data: repOptions, isLoading: repOptionsLoading } = trpc.profile.getRepOptions.useQuery(undefined, {
     enabled: isAdmin,
     staleTime: 300000,
   });
@@ -923,7 +923,14 @@ export default function ClientsPage() {
           </TabsContent>
 
           <TabsContent value="evolucao" className="mt-4">
-            <YtdRankingSection isAdmin={true} repOptions={repOptions} />
+            {repOptionsLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-20 w-full rounded-lg" />
+                <Skeleton className="h-64 w-full rounded-lg" />
+              </div>
+            ) : (
+              <YtdRankingSection isAdmin={true} repOptions={repOptions || []} />
+            )}
           </TabsContent>
         </Tabs>
       )}
