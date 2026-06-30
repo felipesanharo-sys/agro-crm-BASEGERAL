@@ -43,6 +43,13 @@
       "when": 1781799453089,
       "tag": "0005_magical_puck",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1782829034534,
+      "tag": "0006_confused_maestro",
+      "breakpoints": true
     }
   ]
 }

@@ -1099,10 +1099,19 @@ export const appRouter = router({
     sync: adminProcedure.mutation(async () => {
       return db.syncForecastFromGoogleSheets();
     }),
+    getMetas: adminProcedure.query(async () => {
+      return db.getMetasPrevisoes();
+    }),
+    upsertMeta: adminProcedure
+      .input(z.object({ repCode: z.string(), repName: z.string(), metaKg: z.number(), previsaoKg: z.number() }))
+      .mutation(async ({ input }) => {
+        return db.upsertMetaPrevisao(input);
+      }),
+    initializeMetas: adminProcedure.mutation(async () => {
+      return db.initializeMetasPrevisoes();
+    }),
   }),
 
 });
 
 export type AppRouter = typeof appRouter;
-
-// Adicionar rota sync ao forecast router - será feito via sed

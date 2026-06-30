@@ -13,6 +13,7 @@ import {
   uploadHistory, InsertUploadHistory,
   invoicesBackup, InsertInvoicesBackup,
   prospects, InsertProspect,
+  forecastMetaPrevisao, InsertForecastMetaPrevisao, ForecastMetaPrevisao,
 } from "../drizzle/schema";
 
 import { ENV } from './_core/env';
@@ -1452,21 +1453,28 @@ export async function syncForecastFromGoogleSheets() {
     
     const forecastDataFromDb = (forecastResult as any) || [];
     
-    // Mapear dados reais, com fallback para valores padrão
-    const forecastData = forecastDataFromDb.map((rc: any) => ({
-      repCode: rc.repCode,
-      repName: rc.repName,
-      yearMonth: currentMonth,
-      metaKg: 80000, // Meta padrão - pode ser customizada depois
-      previsaoKg: Math.ceil((rc.realizadoKg || 0) * 1.2), // Previsão = Realizado * 1.2
-      realizadoKg: rc.realizadoKg || 0, // Realizado do YTD
-      emTelaKg: 0,
-      contatoSemanalKg: 0,
-      consumidorKg: 0,
-      revendaKg: 0,
-      industriaKg: 0,
-      necessidadeDiariaKg: 0,
-    }));
+    // Buscar metas e previsões reais da tabela forecast_meta_previsao
+    const metasPrevisoes = await getMetasPrevisoes();
+    const metasMap = new Map(metasPrevisoes.map(m => [m.repCode, { metaKg: m.metaKg, previsaoKg: m.previsaoKg }]));
+    
+    // Mapear dados reais com metas e previsões
+    const forecastData = forecastDataFromDb.map((rc: any) => {
+      const metaData = metasMap.get(rc.repCode) || { metaKg: 80000, previsaoKg: 0 };
+      return {
+        repCode: rc.repCode,
+        repName: rc.repName,
+        yearMonth: currentMonth,
+        metaKg: metaData.metaKg, // Meta real da tabela
+        previsaoKg: metaData.previsaoKg || Math.ceil((rc.realizadoKg || 0) * 1.2), // Previsão real ou calculada
+        realizadoKg: rc.realizadoKg || 0, // Realizado do YTD
+        emTelaKg: 0,
+        contatoSemanalKg: 0,
+        consumidorKg: 0,
+        revendaKg: 0,
+        industriaKg: 0,
+        necessidadeDiariaKg: 0,
+      };
+    });
 
     // Limpar dados antigos do mês
     await db.execute(sql`DELETE FROM forecast_data WHERE yearMonth = ${currentMonth}`);
@@ -1688,4 +1696,80 @@ export async function deleteProspect(
     ? eq(prospects.id, id)
     : and(eq(prospects.id, id), eq(prospects.repCode, repCode));
   await db.delete(prospects).where(whereClause);
+}
+
+
+// ============================================================
+// Funções para Metas e Previsões por RC
+// ============================================================
+
+export async function getMetasPrevisoes(): Promise<ForecastMetaPrevisao[]> {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const result = await db.select().from(forecastMetaPrevisao).orderBy(forecastMetaPrevisao.repName);
+    return result;
+  } catch (error) {
+    console.error("Error fetching metas previsoes:", error);
+    return [];
+  }
+}
+
+export async function upsertMetaPrevisao(data: InsertForecastMetaPrevisao): Promise<ForecastMetaPrevisao | null> {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const existing = await db.select().from(forecastMetaPrevisao).where(eq(forecastMetaPrevisao.repCode, data.repCode));
+    
+    if (existing.length > 0) {
+      // Update
+      await db.update(forecastMetaPrevisao)
+        .set({ metaKg: data.metaKg, previsaoKg: data.previsaoKg })
+        .where(eq(forecastMetaPrevisao.repCode, data.repCode));
+      const updated = await db.select().from(forecastMetaPrevisao).where(eq(forecastMetaPrevisao.repCode, data.repCode));
+      return updated[0] || null;
+    } else {
+      // Insert
+      await db.insert(forecastMetaPrevisao).values(data);
+      const inserted = await db.select().from(forecastMetaPrevisao).where(eq(forecastMetaPrevisao.repCode, data.repCode));
+      return inserted[0] || null;
+    }
+  } catch (error) {
+    console.error("Error upserting meta previsao:", error);
+    return null;
+  }
+}
+
+export async function initializeMetasPrevisoes(): Promise<{ success: boolean; inserted: number }> {
+  const db = await getDb();
+  if (!db) return { success: false, inserted: 0 };
+  
+  try {
+    // Buscar todos os RCs distintos de invoices
+    const [rcsResult] = await db.execute(sql`
+      SELECT DISTINCT repCode, repName FROM invoices ORDER BY repName ASC
+    `);
+    
+    const rcs = (rcsResult as any) || [];
+    let inserted = 0;
+    
+    for (const rc of rcs) {
+      const existing = await db.select().from(forecastMetaPrevisao).where(eq(forecastMetaPrevisao.repCode, rc.repCode));
+      
+      if (existing.length === 0) {
+        await db.insert(forecastMetaPrevisao).values({
+          repCode: rc.repCode,
+          repName: rc.repName,
+          metaKg: 80000,
+          previsaoKg: 0,
+        });
+        inserted++;
+      }
+    }
+    
+    return { success: true, inserted };
+  } catch (error) {
+    console.error("Error initializing metas previsoes:", error);
+    return { success: false, inserted: 0 };
+  }
 }

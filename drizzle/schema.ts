@@ -308,3 +308,20 @@ export const prospects = mysqlTable("prospects", {
 
 export type Prospect = typeof prospects.$inferSelect;
 export type InsertProspect = typeof prospects.$inferInsert;
+
+
+// Meta e Previsão por RC para aba Previsão
+export const forecastMetaPrevisao = mysqlTable("forecast_meta_previsao", {
+  id: int("id").autoincrement().primaryKey(),
+  repCode: varchar("repCode", { length: 32 }).notNull().unique(),
+  repName: varchar("repName", { length: 256 }).notNull(),
+  metaKg: int("metaKg").notNull().default(0),
+  previsaoKg: int("previsaoKg").notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("idx_meta_previsao_rep").on(table.repCode),
+]);
+
+export type ForecastMetaPrevisao = typeof forecastMetaPrevisao.$inferSelect;
+export type InsertForecastMetaPrevisao = typeof forecastMetaPrevisao.$inferInsert;

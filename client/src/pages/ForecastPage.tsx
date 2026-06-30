@@ -249,6 +249,151 @@ export default function ForecastPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Painel de Edição de Metas e Previsões */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="w-5 h-5" />
+            Editar Metas e Previsões
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MetasPrevisoesList />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function MetasPrevisoesList() {
+  const { toast } = useToast();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<{ metaKg: number; previsaoKg: number }>({ metaKg: 0, previsaoKg: 0 });
+
+  // Fetch metas
+  const { data: metas, isLoading } = trpc.forecast.getMetas.useQuery();
+  const upsertMutation = trpc.forecast.upsertMeta.useMutation();
+  const initMutation = trpc.forecast.initializeMetas.useMutation();
+
+  const handleEdit = (repCode: string, metaKg: number, previsaoKg: number) => {
+    setEditingId(repCode);
+    setEditValues({ metaKg, previsaoKg });
+  };
+
+  const handleSave = async (repCode: string, repName: string) => {
+    try {
+      await upsertMutation.mutateAsync({
+        repCode,
+        repName,
+        metaKg: editValues.metaKg,
+        previsaoKg: editValues.previsaoKg,
+      });
+      toast({
+        title: "Sucesso",
+        description: "Meta e previsão atualizadas!",
+      });
+      setEditingId(null);
+      trpc.useUtils().forecast.getMetas.invalidate();
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Falha ao atualizar",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleInitialize = async () => {
+    try {
+      await initMutation.mutateAsync();
+      toast({
+        title: "Sucesso",
+        description: "Metas inicializadas para todos os RCs!",
+      });
+      trpc.useUtils().forecast.getMetas.invalidate();
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Falha ao inicializar",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (isLoading) {
+    return <div className="text-center py-4">Carregando...</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <Button onClick={handleInitialize} variant="outline" className="mb-4">
+        Inicializar Metas para Todos os RCs
+      </Button>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b">
+              <th className="text-left px-4 py-2">RC</th>
+              <th className="text-right px-4 py-2">Meta (kg)</th>
+              <th className="text-right px-4 py-2">Previsão (kg)</th>
+              <th className="text-center px-4 py-2">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {metas?.map((meta) => (
+              <tr key={meta.repCode} className="border-b hover:bg-gray-50">
+                <td className="px-4 py-2">{meta.repName}</td>
+                <td className="px-4 py-2 text-right">
+                  {editingId === meta.repCode ? (
+                    <input
+                      type="number"
+                      value={editValues.metaKg}
+                      onChange={(e) => setEditValues({ ...editValues, metaKg: Number(e.target.value) })}
+                      className="w-32 px-2 py-1 border rounded"
+                    />
+                  ) : (
+                    meta.metaKg.toLocaleString("pt-BR")
+                  )}
+                </td>
+                <td className="px-4 py-2 text-right">
+                  {editingId === meta.repCode ? (
+                    <input
+                      type="number"
+                      value={editValues.previsaoKg}
+                      onChange={(e) => setEditValues({ ...editValues, previsaoKg: Number(e.target.value) })}
+                      className="w-32 px-2 py-1 border rounded"
+                    />
+                  ) : (
+                    meta.previsaoKg.toLocaleString("pt-BR")
+                  )}
+                </td>
+                <td className="px-4 py-2 text-center">
+                  {editingId === meta.repCode ? (
+                    <div className="flex gap-2 justify-center">
+                      <Button
+                        size="sm"
+                        onClick={() => handleSave(meta.repCode, meta.repName)}
+                        disabled={upsertMutation.isPending}
+                      >
+                        Salvar
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={() => handleEdit(meta.repCode, meta.metaKg, meta.previsaoKg)}>
+                      Editar
+                    </Button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
