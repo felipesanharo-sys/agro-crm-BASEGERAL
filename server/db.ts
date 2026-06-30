@@ -1436,22 +1436,30 @@ export async function syncForecastFromGoogleSheets() {
   if (!db) return { success: false, error: "Database not available" };
 
   try {
-    // Buscar todos os RCs distintos da tabela invoices
-    const [rcsResult] = await db.execute(sql`
-      SELECT DISTINCT repCode, repName FROM invoices ORDER BY repName ASC
-    `);
-    
-    const rcs = (rcsResult as any) || [];
     const currentMonth = getCurrentYearMonth();
     
-    // Gerar dados de previsão para todos os RCs
-    const forecastData = rcs.map((rc: any) => ({
+    // Buscar dados reais de Realizado por RC do ano atual
+    const [forecastResult] = await db.execute(sql`
+      SELECT 
+        repCode,
+        MAX(repName) as repName,
+        SUM(quantityKg) as realizadoKg
+      FROM invoices
+      WHERE YEAR(invoiceDate) = YEAR(CURDATE())
+      GROUP BY repCode
+      ORDER BY repName ASC
+    `);
+    
+    const forecastDataFromDb = (forecastResult as any) || [];
+    
+    // Mapear dados reais, com fallback para valores padrão
+    const forecastData = forecastDataFromDb.map((rc: any) => ({
       repCode: rc.repCode,
       repName: rc.repName,
       yearMonth: currentMonth,
-      metaKg: 50000,
-      previsaoKg: 45000,
-      realizadoKg: 0,
+      metaKg: 80000, // Meta padrão - pode ser customizada depois
+      previsaoKg: Math.ceil((rc.realizadoKg || 0) * 1.2), // Previsão = Realizado * 1.2
+      realizadoKg: rc.realizadoKg || 0, // Realizado do YTD
       emTelaKg: 0,
       contatoSemanalKg: 0,
       consumidorKg: 0,
@@ -1463,20 +1471,22 @@ export async function syncForecastFromGoogleSheets() {
     // Limpar dados antigos do mês
     await db.execute(sql`DELETE FROM forecast_data WHERE yearMonth = ${currentMonth}`);
 
-    // Inserir novos dados
-    for (const data of forecastData) {
-      await db.execute(sql`
-        INSERT INTO forecast_data (
-          repCode, repName, yearMonth, metaKg, previsaoKg, realizadoKg,
-          emTelaKg, contatoSemanalKg, consumidorKg, revendaKg, industriaKg,
-          necessidadeDiariaKg
-        ) VALUES (
-          ${data.repCode}, ${data.repName}, ${data.yearMonth},
-          ${data.metaKg}, ${data.previsaoKg}, ${data.realizadoKg},
-          ${data.emTelaKg}, ${data.contatoSemanalKg}, ${data.consumidorKg},
-          ${data.revendaKg}, ${data.industriaKg}, ${data.necessidadeDiariaKg}
-        )
-      `);
+    // Inserir novos dados em batch
+    if (forecastData.length > 0) {
+      for (const data of forecastData) {
+        await db.execute(sql`
+          INSERT INTO forecast_data (
+            repCode, repName, yearMonth, metaKg, previsaoKg, realizadoKg,
+            emTelaKg, contatoSemanalKg, consumidorKg, revendaKg, industriaKg,
+            necessidadeDiariaKg
+          ) VALUES (
+            ${data.repCode}, ${data.repName}, ${data.yearMonth},
+            ${data.metaKg}, ${data.previsaoKg}, ${data.realizadoKg},
+            ${data.emTelaKg}, ${data.contatoSemanalKg}, ${data.consumidorKg},
+            ${data.revendaKg}, ${data.industriaKg}, ${data.necessidadeDiariaKg}
+          )
+        `);
+      }
     }
 
     return { success: true, inserted: forecastData.length };
