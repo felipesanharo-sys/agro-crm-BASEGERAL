@@ -96,7 +96,7 @@ export default function ForecastPage() {
             <SelectTrigger className="w-48">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-96">
               <SelectItem value="consolidado">Consolidado</SelectItem>
               {allRcs?.map((rc: any) => (
                 <SelectItem key={rc.repCode} value={rc.repCode}>
@@ -179,43 +179,23 @@ export default function ForecastPage() {
       )}
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Meta vs Previsão vs Realizado */}
         <Card>
           <CardHeader>
             <CardTitle>Meta vs Previsão vs Realizado</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={400}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
+                <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
                 <YAxis />
                 <Tooltip formatter={(value) => `${(value as number).toLocaleString("pt-BR", { maximumFractionDigits: 0 })} kg`} />
                 <Legend />
                 <Bar dataKey="meta" fill="#10b981" name="Meta" />
                 <Bar dataKey="previsao" fill="#f59e0b" name="Previsão" />
                 <Bar dataKey="realizado" fill="#3b82f6" name="Realizado" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Pedido em Tela */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Pedido em Tela vs Meta</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
-                <YAxis />
-                <Tooltip formatter={(value) => `${(value as number).toLocaleString("pt-BR", { maximumFractionDigits: 0 })} kg`} />
-                <Legend />
-                <Bar dataKey="meta" fill="#10b981" name="Meta" />
-                <Bar dataKey="emTela" fill="#8b5cf6" name="Em Tela" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
