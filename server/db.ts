@@ -1436,57 +1436,31 @@ export async function syncForecastFromGoogleSheets() {
   if (!db) return { success: false, error: "Database not available" };
 
   try {
-    // Google Sheets API URL - você precisa substituir com sua chave de API
-    // Por enquanto, vou criar dados de exemplo para demonstração
+    // Buscar todos os RCs distintos da tabela invoices
+    const [rcsResult] = await db.execute(sql`
+      SELECT DISTINCT repCode, repName FROM invoices ORDER BY repName ASC
+    `);
     
-    // Dados de exemplo baseados na estrutura da planilha
-    const forecastData = [
-      {
-        repCode: "VBRP900001",
-        repName: "BARRETO E MORAIS",
-        yearMonth: "2026.06",
-        metaKg: 100000,
-        previsaoKg: 85000,
-        realizadoKg: 45000,
-        emTelaKg: 7523,
-        contatoSemanalKg: 7500,
-        consumidorKg: 47000,
-        revendaKg: 7500,
-        industriaKg: 30500,
-        necessidadeDiariaKg: 1800,
-      },
-      {
-        repCode: "VBRP900002",
-        repName: "S COMERCIO E",
-        yearMonth: "2026.06",
-        metaKg: 30000,
-        previsaoKg: 30050,
-        realizadoKg: 15200,
-        emTelaKg: 1250,
-        contatoSemanalKg: 5100,
-        consumidorKg: 19300,
-        revendaKg: 30750,
-        industriaKg: 0,
-        necessidadeDiariaKg: 500,
-      },
-      {
-        repCode: "VBRP900003",
-        repName: "MENDES E MENDE",
-        yearMonth: "2026.06",
-        metaKg: 40000,
-        previsaoKg: 42200,
-        realizadoKg: 15200,
-        emTelaKg: 0,
-        contatoSemanalKg: 0,
-        consumidorKg: 14000,
-        revendaKg: 15200,
-        industriaKg: 0,
-        necessidadeDiariaKg: 1200,
-      },
-    ];
+    const rcs = (rcsResult as any) || [];
+    const currentMonth = getCurrentYearMonth();
+    
+    // Gerar dados de previsão para todos os RCs
+    const forecastData = rcs.map((rc: any) => ({
+      repCode: rc.repCode,
+      repName: rc.repName,
+      yearMonth: currentMonth,
+      metaKg: 50000,
+      previsaoKg: 45000,
+      realizadoKg: 0,
+      emTelaKg: 0,
+      contatoSemanalKg: 0,
+      consumidorKg: 0,
+      revendaKg: 0,
+      industriaKg: 0,
+      necessidadeDiariaKg: 0,
+    }));
 
     // Limpar dados antigos do mês
-    const currentMonth = getCurrentYearMonth();
     await db.execute(sql`DELETE FROM forecast_data WHERE yearMonth = ${currentMonth}`);
 
     // Inserir novos dados
