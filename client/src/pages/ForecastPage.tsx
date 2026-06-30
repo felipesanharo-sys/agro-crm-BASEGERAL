@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { trpc } from "@/lib/trpc";
 import { TrendingUp, Target, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
 
 export default function ForecastPage() {
   const [selectedRc, setSelectedRc] = useState<string>("consolidado");
@@ -275,6 +275,10 @@ function MetasPrevisoesList() {
   const { data: metas, isLoading } = trpc.forecast.getMetas.useQuery();
   const upsertMutation = trpc.forecast.upsertMeta.useMutation();
   const initMutation = trpc.forecast.initializeMetas.useMutation();
+  
+  React.useEffect(() => {
+    console.log('Metas loaded:', metas);
+  }, [metas]);
 
   const handleEdit = (repCode: string, metaKg: number, previsaoKg: number) => {
     setEditingId(repCode);
