@@ -54,22 +54,18 @@ export default function ForecastPage() {
     }
   };
 
-  // Prepare chart data - Percentuais (Base 100 = Meta)
+  // Prepare chart data - Percentuais (Previsão e Realizado)
   const chartData = useMemo(() => {
     if (!allRcs || allRcs.length === 0) return [];
     return allRcs.map((rc: any) => {
       // Os dados já vêm como percentuais da planilha
-      const meta = 100; // Meta é sempre 100% como base
       const previsao = Number(rc.previsaoKg) || 0; // Já é percentual
       const realizado = Number(rc.realizadoKg) || 0; // Já é percentual
-      const emTela = Number(rc.emTelaKg) || 0; // Já é percentual
       
       return {
         name: rc.repName?.substring(0, 15) || rc.repCode,
-        meta,
         previsao,
         realizado,
-        emTela,
       };
     });
   }, [allRcs]);
@@ -200,7 +196,6 @@ export default function ForecastPage() {
                 <YAxis label={{ value: '%', angle: -90, position: 'insideLeft' }} />
                 <Tooltip formatter={(value) => `${(value as number).toFixed(1)}%`} />
                 <Legend />
-                <Bar dataKey="meta" fill="#10b981" name="Meta (100%)" />
                 <Bar dataKey="previsao" fill="#f59e0b" name="Previsão (%)" />
                 <Bar dataKey="realizado" fill="#3b82f6" name="Realizado (%)" />
               </BarChart>
