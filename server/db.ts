@@ -1489,8 +1489,8 @@ export async function syncForecastFromGoogleSheets() {
           repName: rc.repName,
           yearMonth: currentMonth,
           metaKg: 100, // Meta sempre 100% como base
-          previsaoKg: (rc.previsaoPercentual || 0) * 100, // Converter decimal em percentual
-          realizadoKg: (rc.pedidoEmTelaPercentual || 0) * 100, // Pedido em Tela = Realizado, converter decimal em percentual
+          previsaoKg: rc.previsaoPercentual || 0, // Previsão em %
+          realizadoKg: rc.pedidoEmTelaPercentual || 0, // Pedido em Tela = Realizado em %
           emTelaKg: 0,
           contatoSemanalKg: 0,
           consumidorKg: 0,
