@@ -1440,7 +1440,7 @@ export async function syncForecastFromGoogleSheets() {
     const currentMonth = getCurrentYearMonth();
     
     // Puxar percentuais da planilha do Google Sheets via Google Apps Script
-    let percentuais: Array<{ repName: string; pedidoEmTelaPercentual: number; faturadoPercentual: number; previsaoPercentual: number }> = [];
+    let percentuais: Array<{ repName: string; pedidoEmTelaPercentual: number; previsaoPercentual: number }> = [];
     try {
       const response = await fetch('https://script.google.com/macros/s/AKfycbzBgJOObtdDCFyfAA3Y6RZCmUVQi82wDQW1o0iYCkEuAuoyfMrOCu-kHkT2GQhTSi8rBA/exec');
       if (response.ok) {
@@ -1489,9 +1489,9 @@ export async function syncForecastFromGoogleSheets() {
           repName: rc.repName,
           yearMonth: currentMonth,
           metaKg: 100, // Meta sempre 100% como base
-          previsaoKg: rc.previsaoPercentual || 0,
-          realizadoKg: rc.faturadoPercentual || 0,
-          emTelaKg: rc.pedidoEmTelaPercentual || 0,
+          previsaoKg: (rc.previsaoPercentual || 0) * 100, // Converter decimal em percentual
+          realizadoKg: (rc.pedidoEmTelaPercentual || 0) * 100, // Pedido em Tela = Realizado, converter decimal em percentual
+          emTelaKg: 0,
           contatoSemanalKg: 0,
           consumidorKg: 0,
           revendaKg: 0,
