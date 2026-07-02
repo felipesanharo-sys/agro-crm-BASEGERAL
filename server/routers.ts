@@ -1086,14 +1086,25 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return db.getForecastConsolidated(input?.yearMonth);
       }),
-    byRc: adminProcedure
-      .input(z.object({ repCode: z.string(), yearMonth: z.string().optional() }))
-      .query(async ({ input }) => {
-        return db.getForecastByRc(input.repCode, input.yearMonth);
+    byRc: protectedProcedure
+      .input(z.object({ repCode: z.string().optional(), yearMonth: z.string().optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        // Para forecast, usar repCode exato do usuário (sem resolver parentRepCode)
+        const userRepCode = getUserRawRepCode(ctx.user);
+        const repCode = userRepCode || input?.repCode;
+        if (!repCode) return null;
+        return db.getForecastByRc(repCode, input?.yearMonth);
       }),
-    allRcs: adminProcedure
+    allRcs: protectedProcedure
       .input(z.object({ yearMonth: z.string().optional() }).optional())
-      .query(async ({ input }) => {
+      .query(async ({ ctx, input }) => {
+        // Para forecast, usar repCode exato do usuário (sem resolver parentRepCode)
+        const userRepCode = getUserRawRepCode(ctx.user);
+        if (userRepCode) {
+          // RC vê apenas seus dados - buscar por repName que contenha o nome do RC
+          const rcData = await db.getForecastByRc(userRepCode, input?.yearMonth);
+          return rcData ? [rcData] : [];
+        }
         return db.getForecastAllRcs(input?.yearMonth);
       }),
     sync: adminProcedure.mutation(async () => {

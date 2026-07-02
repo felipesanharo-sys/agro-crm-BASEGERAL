@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -6,17 +6,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, LabelList } from "recharts";
 import { trpc } from "@/lib/trpc";
 import { RefreshCw, Target } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 export default function ForecastPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [selectedRc, setSelectedRc] = useState<string>("consolidado");
   const [yearMonth, setYearMonth] = useState<string>("");
   const { toast } = useToast();
   const syncMutation = trpc.forecast.sync.useMutation();
 
-  // Fetch consolidated data
+  // Fetch consolidated data (admin only)
   const { data: consolidated, isLoading: consolidatedLoading } = trpc.forecast.consolidated.useQuery(
     { yearMonth: yearMonth || undefined },
-    { staleTime: 300000 }
+    { enabled: isAdmin, staleTime: 300000 }
   );
 
   // Fetch all RCs data
@@ -125,29 +128,33 @@ export default function ForecastPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold">Previsão de Vendas</h1>
         <div className="flex gap-3 items-center">
-          <Select value={selectedRc} onValueChange={setSelectedRc}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="max-h-96">
-              <SelectItem value="consolidado">Consolidado</SelectItem>
-              {allRcs?.map((rc: any) => (
-                <SelectItem key={rc.repCode} value={rc.repCode}>
-                  {rc.repName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            onClick={handleSync}
-            disabled={syncMutation.isPending}
-            variant="outline"
-            size="sm"
-            className="gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
-            Sincronizar
-          </Button>
+          {isAdmin && (
+            <Select value={selectedRc} onValueChange={setSelectedRc}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-96">
+                <SelectItem value="consolidado">Consolidado</SelectItem>
+                {allRcs?.map((rc: any) => (
+                  <SelectItem key={rc.repCode} value={rc.repCode}>
+                    {rc.repName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {isAdmin && (
+            <Button
+              onClick={handleSync}
+              disabled={syncMutation.isPending}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
+              Sincronizar
+            </Button>
+          )}
         </div>
       </div>
 
@@ -238,7 +245,7 @@ export default function ForecastPage() {
       </Card>
 
       {/* Tabela Detalhamento por RC */}
-      {selectedRc === "consolidado" && allRcs && allRcs.length > 0 && (
+      {allRcs && allRcs.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Detalhamento por RC</CardTitle>

@@ -227,3 +227,9 @@
 - [x] Implementar tabela detalhada por RC (BDG, Prev, Ped.Tela, Faturado, Contato, Gap, KG/dia, Meta)
 - [x] Adicionar rodapé com dias úteis restantes e KG/dia necessário
 - [x] GAP calculado como Em Tela - BDG (o que falta para meta)
+
+## Feature: Controle de Acesso na Aba Previsão
+- [x] RC vê apenas seus próprios dados (sem consolidado, sem dropdown de outros RCs)
+- [x] Gestor/Admin vê visão consolidada + todos os RCs
+- [x] Atualizar rotas backend para filtrar por repCode do usuário logado
+- [x] Atualizar frontend para ocultar dropdown e consolidado para RCs
