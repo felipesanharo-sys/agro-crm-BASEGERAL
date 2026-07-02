@@ -1444,7 +1444,7 @@ export async function syncForecastFromGoogleSheets() {
       SELECT 
         repCode,
         MAX(repName) as repName,
-        SUM(quantityKg) as realizadoKg
+        SUM(volumeKg) as realizadoKg
       FROM invoices
       WHERE YEAR(invoiceDate) = YEAR(CURDATE())
       GROUP BY repCode
