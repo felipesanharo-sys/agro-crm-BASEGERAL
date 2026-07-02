@@ -1439,56 +1439,69 @@ export async function syncForecastFromGoogleSheets() {
   try {
     const currentMonth = getCurrentYearMonth();
     
-    // Buscar dados reais de Realizado por RC do ano atual
-    const [forecastResult] = await db.execute(sql`
-      SELECT 
-        repCode,
-        MAX(repName) as repName,
-        SUM(volumeKg) as realizadoKg
-      FROM invoices
-      WHERE YEAR(invoiceDate) = YEAR(CURDATE())
-      GROUP BY repCode
-      ORDER BY repName ASC
-    `);
-    
-    const forecastDataFromDb = (forecastResult as any) || [];
-    
-    // Puxar metas e previsões da planilha do Google Sheets via Google Apps Script
+    // Puxar metas, previsões e realizado da planilha do Google Sheets via Google Apps Script
     let metasPrevisoes: Array<{ repName: string; metaKg: number; previsaoKg: number; realizadoKg: number }> = [];
     try {
-      const response = await fetch('https://script.google.com/macros/s/AKfycbxZanUj31rbWwQUOYO-fvR6swh_4a6g-8jnKTOomwWk/dev');
+      const response = await fetch('https://script.google.com/macros/s/AKfycbylIlG_SbmmdNaI3Jt2xH25I9JR8iDBbFlELRdgjAOoT65dGedLbv9VV1Cto-u4KV2iCQ/exec');
       if (response.ok) {
         metasPrevisoes = await response.json();
+        console.log('[Forecast] Dados recebidos da planilha:', metasPrevisoes.length, 'RCs');
+      } else {
+        console.error('[Forecast] Google Sheets retornou status:', response.status);
+        return { success: false, error: 'Google Sheets retornou status ' + response.status };
       }
     } catch (error) {
-      console.warn('[Forecast] Failed to fetch from Google Sheets:', error);
+      console.error('[Forecast] Failed to fetch from Google Sheets:', error);
+      return { success: false, error: 'Falha ao conectar com Google Sheets: ' + String(error) };
     }
-    
-    const metasMap = new Map(metasPrevisoes.map(m => [m.repName, { metaKg: m.metaKg, previsaoKg: m.previsaoKg }]));
-    
-    // Mapear dados reais com metas e previsões da planilha
-    const forecastData = forecastDataFromDb.map((rc: any) => {
-      const metaData = metasMap.get(rc.repName) || { metaKg: 80000, previsaoKg: 0 };
-      return {
-        repCode: rc.repCode,
-        repName: rc.repName,
-        yearMonth: currentMonth,
-        metaKg: metaData.metaKg, // Meta real da planilha
-        previsaoKg: metaData.previsaoKg || Math.ceil((rc.realizadoKg || 0) * 1.2), // Previsão real da planilha ou calculada
-        realizadoKg: rc.realizadoKg || 0, // Realizado do YTD
-        emTelaKg: 0,
-        contatoSemanalKg: 0,
-        consumidorKg: 0,
-        revendaKg: 0,
-        industriaKg: 0,
-        necessidadeDiariaKg: 0,
-      };
-    });
+
+    if (metasPrevisoes.length === 0) {
+      return { success: false, error: 'Nenhum dado retornado da planilha' };
+    }
+
+    // Buscar repCode correspondente de invoices para cada RC
+    const [repCodesResult] = await db.execute(sql`
+      SELECT DISTINCT repCode, repName FROM invoices
+    `);
+    const repCodesMap = new Map((repCodesResult as any[]).map((r: any) => [r.repName, r.repCode]));
+
+    // Mapear dados da planilha para forecast_data
+    const forecastData = metasPrevisoes
+      .filter(rc => rc.repName !== 'BA02') // Excluir linha de total
+      .map((rc, index) => {
+        // Tentar encontrar repCode pelo nome exato ou parcial
+        let repCode = repCodesMap.get(rc.repName) || '';
+        if (!repCode) {
+          // Busca parcial
+          for (const [name, code] of repCodesMap.entries()) {
+            if (name.includes(rc.repName) || rc.repName.includes(name)) {
+              repCode = code;
+              break;
+            }
+          }
+        }
+        if (!repCode) repCode = `RC_${index + 1}`;
+
+        return {
+          repCode,
+          repName: rc.repName,
+          yearMonth: currentMonth,
+          metaKg: rc.metaKg || 0,
+          previsaoKg: rc.previsaoKg || 0,
+          realizadoKg: rc.realizadoKg || 0,
+          emTelaKg: 0,
+          contatoSemanalKg: 0,
+          consumidorKg: 0,
+          revendaKg: 0,
+          industriaKg: 0,
+          necessidadeDiariaKg: 0,
+        };
+      });
 
     // Limpar dados antigos do mês
     await db.execute(sql`DELETE FROM forecast_data WHERE yearMonth = ${currentMonth}`);
 
-    // Inserir novos dados em batch
+    // Inserir novos dados
     if (forecastData.length > 0) {
       for (const data of forecastData) {
         await db.execute(sql`
@@ -1498,14 +1511,15 @@ export async function syncForecastFromGoogleSheets() {
             necessidadeDiariaKg
           ) VALUES (
             ${data.repCode}, ${data.repName}, ${data.yearMonth},
-            ${data.metaKg}, ${data.previsaoKg}, ${data.realizadoKg},
-            ${data.emTelaKg}, ${data.contatoSemanalKg}, ${data.consumidorKg},
-            ${data.revendaKg}, ${data.industriaKg}, ${data.necessidadeDiariaKg}
+            ${String(data.metaKg)}, ${String(data.previsaoKg)}, ${String(data.realizadoKg)},
+            ${String(data.emTelaKg)}, ${String(data.contatoSemanalKg)}, ${String(data.consumidorKg)},
+            ${String(data.revendaKg)}, ${String(data.industriaKg)}, ${String(data.necessidadeDiariaKg)}
           )
         `);
       }
     }
 
+    console.log('[Forecast] Sincronização concluída:', forecastData.length, 'RCs inseridos');
     return { success: true, inserted: forecastData.length };
   } catch (error) {
     console.error("Error syncing forecast data:", error);
