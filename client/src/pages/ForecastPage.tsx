@@ -34,6 +34,7 @@ export default function ForecastPage() {
   const currentData = selectedRc === "consolidado" ? consolidated : rcData;
   const isLoading = selectedRc === "consolidado" ? consolidatedLoading : false;
 
+  const utils = trpc.useUtils();
   const handleSync = async () => {
     try {
       await syncMutation.mutateAsync();
@@ -42,10 +43,8 @@ export default function ForecastPage() {
         description: "Dados sincronizados com a planilha!",
       });
       // Refetch data
-      await Promise.all([
-        trpc.useUtils().forecast.consolidated.invalidate(),
-        trpc.useUtils().forecast.allRcs.invalidate(),
-      ]);
+      await utils.forecast.consolidated.invalidate();
+      await utils.forecast.allRcs.invalidate();
     } catch (error) {
       toast({
         title: "Erro",
