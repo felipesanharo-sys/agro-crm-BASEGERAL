@@ -3,9 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, LabelList } from "recharts";
 import { trpc } from "@/lib/trpc";
-import { TrendingUp, Target, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
+import { RefreshCw, Target } from "lucide-react";
 
 export default function ForecastPage() {
   const [selectedRc, setSelectedRc] = useState<string>("consolidado");
@@ -42,7 +42,6 @@ export default function ForecastPage() {
         title: "Sucesso",
         description: "Dados sincronizados com a planilha!",
       });
-      // Refetch data
       await utils.forecast.consolidated.invalidate();
       await utils.forecast.allRcs.invalidate();
     } catch (error) {
@@ -54,46 +53,77 @@ export default function ForecastPage() {
     }
   };
 
-  // Prepare chart data - Percentuais (Previsão e Realizado)
+  // Dados consolidados para cards
+  const totalBdg = useMemo(() => {
+    if (!allRcs) return 0;
+    return allRcs.reduce((sum: number, rc: any) => sum + (Number(rc.metaKg) || 0), 0);
+  }, [allRcs]);
+
+  const totalPrevisaoKg = useMemo(() => {
+    if (!allRcs) return 0;
+    return allRcs.reduce((sum: number, rc: any) => sum + (Number(rc.previsaoKg) || 0), 0);
+  }, [allRcs]);
+
+  const totalEmTelaKg = useMemo(() => {
+    if (!allRcs) return 0;
+    return allRcs.reduce((sum: number, rc: any) => sum + (Number(rc.emTelaKg) || 0), 0);
+  }, [allRcs]);
+
+  const totalFaturadoKg = useMemo(() => {
+    if (!allRcs) return 0;
+    return allRcs.reduce((sum: number, rc: any) => sum + (Number(rc.realizadoKg) || 0), 0);
+  }, [allRcs]);
+
+  const previsaoPercent = totalBdg > 0 ? Math.round((totalPrevisaoKg / totalBdg) * 100) : 0;
+  const emTelaPercent = totalBdg > 0 ? Math.round((totalEmTelaKg / totalBdg) * 100) : 0;
+  const faturadoPercent = totalBdg > 0 ? Math.round((totalFaturadoKg / totalBdg) * 100) : 0;
+
+  // Gráfico "Faturado x BDG" - 3 barras por RC
   const chartData = useMemo(() => {
     if (!allRcs || allRcs.length === 0) return [];
     return allRcs.map((rc: any) => {
-      // Os dados já vêm como percentuais da planilha
-      const previsao = Number(rc.previsaoKg) || 0; // Já é percentual
-      const realizado = Number(rc.realizadoKg) || 0; // Já é percentual
+      // consumidorKg = previsao%, revendaKg = emTela%, industriaKg = faturado%
+      const previsaoPct = Number(rc.consumidorKg) || 0;
+      const emTelaPct = Number(rc.revendaKg) || 0;
+      const faturadoPct = Number(rc.industriaKg) || 0;
+      
+      // Abreviar nome do RC
+      const name = (rc.repName || rc.repCode || '').split(' ').slice(0, 2).join(' ');
       
       return {
-        name: rc.repName?.substring(0, 15) || rc.repCode,
-        previsao,
-        realizado,
+        name,
+        fullName: rc.repName,
+        "Pedido na Tela %": emTelaPct,
+        "Faturado %": faturadoPct,
+        "Previsão %": previsaoPct,
       };
     });
   }, [allRcs]);
 
-  // Calculate percentages
-  const percentualAtingimento = currentData && Number(currentData.metaKg) > 0
-    ? ((Number(currentData.realizadoKg) / Number(currentData.metaKg)) * 100).toFixed(1)
-    : "0.0";
+  // Calcular dias úteis restantes no mês
+  const diasUteisRestantes = useMemo(() => {
+    const today = new Date();
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    let count = 0;
+    for (let d = new Date(today); d <= lastDay; d.setDate(d.getDate() + 1)) {
+      const dayOfWeek = d.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) count++;
+    }
+    return count;
+  }, []);
 
-  const percentualPrevisao = currentData && Number(currentData.metaKg) > 0
-    ? ((Number(currentData.previsaoKg) / Number(currentData.metaKg)) * 100).toFixed(1)
-    : "0.0";
+  // KG/dia necessário total
+  const gapTotal = totalBdg - totalEmTelaKg;
+  const kgDiaNecessario = diasUteisRestantes > 0 ? Math.round(gapTotal / diasUteisRestantes) : 0;
 
-  const percentualEmTela = currentData && Number(currentData.metaKg) > 0
-    ? ((Number(currentData.emTelaKg) / Number(currentData.metaKg)) * 100).toFixed(1)
-    : "0.0";
-
-  const gap = currentData
-    ? Number(currentData.metaKg) - Number(currentData.emTelaKg)
-    : 0;
-
-  const COLORS = ["#10b981", "#f59e0b", "#ef4444", "#3b82f6"];
+  // Formatador de números
+  const formatKg = (val: number) => val.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Previsão de Vendas</h1>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h1 className="text-2xl font-bold">Previsão de Vendas</h1>
         <div className="flex gap-3 items-center">
           <Select value={selectedRc} onValueChange={setSelectedRc}>
             <SelectTrigger className="w-48">
@@ -116,96 +146,99 @@ export default function ForecastPage() {
             className="gap-2"
           >
             <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
-            {syncMutation.isPending ? 'Sincronizando...' : 'Sincronizar'}
+            Sincronizar
           </Button>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      {!isLoading && currentData && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Meta */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Target className="h-4 w-4" />
-                Meta (BDG)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{Number(currentData.metaKg).toLocaleString("pt-BR", { maximumFractionDigits: 0 })} kg</div>
-            </CardContent>
-          </Card>
+      {/* KPI Cards - Layout com borda colorida à esquerda */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* BDG (META) */}
+        <Card className="border-l-4 border-l-blue-500">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">BDG (META)</p>
+            <p className="text-2xl font-bold mt-1">{formatKg(totalBdg)} kg</p>
+          </CardContent>
+        </Card>
 
-          {/* Previsão */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                Previsão
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{Number(currentData.previsaoKg).toLocaleString("pt-BR", { maximumFractionDigits: 0 })} kg</div>
-              <p className="text-xs text-muted-foreground mt-1">{percentualPrevisao}% da meta</p>
-            </CardContent>
-          </Card>
+        {/* PREVISÃO FECHAMENTO */}
+        <Card className="border-l-4 border-l-yellow-500">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">PREVISÃO FECHAMENTO</p>
+            <p className="text-2xl font-bold mt-1">
+              <span className="text-yellow-600">{previsaoPercent}%</span>
+              <span className="text-sm font-normal text-muted-foreground ml-2">{formatKg(totalPrevisaoKg)} kg</span>
+            </p>
+          </CardContent>
+        </Card>
 
-          {/* Realizado */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" />
-                Realizado
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{Number(currentData.realizadoKg).toLocaleString("pt-BR", { maximumFractionDigits: 0 })} kg</div>
-              <p className="text-xs text-muted-foreground mt-1">{percentualAtingimento}% da meta</p>
-            </CardContent>
-          </Card>
+        {/* PEDIDO NA TELA */}
+        <Card className="border-l-4 border-l-blue-400">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">PEDIDO NA TELA</p>
+            <p className="text-2xl font-bold mt-1">
+              <span className="text-blue-600">{emTelaPercent}%</span>
+              <span className="text-sm font-normal text-muted-foreground ml-2">{formatKg(totalEmTelaKg)} kg</span>
+            </p>
+          </CardContent>
+        </Card>
 
-          {/* GAP */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <AlertCircle className="h-4 w-4" />
-                GAP
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{gap.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} kg</div>
-              <p className="text-xs text-muted-foreground mt-1">Falta para meta</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 gap-6">
-        {/* Meta vs Previsão vs Realizado */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Meta vs Previsão vs Realizado</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                <YAxis label={{ value: '%', angle: -90, position: 'insideLeft' }} />
-                <Tooltip formatter={(value) => `${(value as number).toFixed(1)}%`} />
-                <Legend />
-                <Bar dataKey="previsao" fill="#f59e0b" name="Previsão (%)" />
-                <Bar dataKey="realizado" fill="#3b82f6" name="Realizado (%)" />
-              </BarChart>
-            </ResponsiveContainer>
+        {/* FATURADO */}
+        <Card className="border-l-4 border-l-red-500">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">FATURADO</p>
+            <p className="text-2xl font-bold mt-1">
+              <span className="text-red-600">{faturadoPercent}%</span>
+              <span className="text-sm font-normal text-muted-foreground ml-2">{formatKg(totalFaturadoKg)} kg</span>
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabela de RCs */}
-      {selectedRc === "consolidado" && (
+      {/* Gráfico Faturado x BDG */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Faturado x BDG</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis 
+                dataKey="name" 
+                angle={-45} 
+                textAnchor="end" 
+                height={80}
+                tick={{ fontSize: 11 }}
+              />
+              <YAxis 
+                tickFormatter={(v) => `${v}%`}
+                tick={{ fontSize: 11 }}
+              />
+              <Tooltip 
+                formatter={(value: number, name: string) => [`${value.toFixed(0)}%`, name]}
+                labelFormatter={(label) => {
+                  const item = chartData.find((d: any) => d.name === label);
+                  return item?.fullName || label;
+                }}
+              />
+              <Legend wrapperStyle={{ paddingTop: 10 }} />
+              <Bar dataKey="Pedido na Tela %" fill="#3b82f6" radius={[2, 2, 0, 0]}>
+                <LabelList dataKey="Pedido na Tela %" position="top" formatter={(v: number) => v > 0 ? `${Math.round(v)}%` : ''} style={{ fontSize: 10 }} />
+              </Bar>
+              <Bar dataKey="Faturado %" fill="#ef4444" radius={[2, 2, 0, 0]}>
+                <LabelList dataKey="Faturado %" position="top" formatter={(v: number) => v > 0 ? `${Math.round(v)}%` : ''} style={{ fontSize: 10 }} />
+              </Bar>
+              <Bar dataKey="Previsão %" fill="#eab308" radius={[2, 2, 0, 0]}>
+                <LabelList dataKey="Previsão %" position="top" formatter={(v: number) => v > 0 ? `${Math.round(v)}%` : ''} style={{ fontSize: 10 }} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Tabela Detalhamento por RC */}
+      {selectedRc === "consolidado" && allRcs && allRcs.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Detalhamento por RC</CardTitle>
@@ -213,40 +246,109 @@ export default function ForecastPage() {
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="px-4 py-2 text-left font-semibold">RC</th>
-                    <th className="px-4 py-2 text-right font-semibold">Meta (%)</th>
-                    <th className="px-4 py-2 text-right font-semibold">Previsão (%)</th>
-                    <th className="px-4 py-2 text-right font-semibold">Realizado (%)</th>
-                    <th className="px-4 py-2 text-right font-semibold">% Atingimento</th>
-                    <th className="px-4 py-2 text-right font-semibold">GAP (%)</th>
+                <thead>
+                  <tr className="border-b">
+                    <th className="px-3 py-3 text-left font-semibold text-muted-foreground">RC</th>
+                    <th className="px-3 py-3 text-right font-semibold text-muted-foreground">BDG</th>
+                    <th className="px-3 py-3 text-center font-semibold text-muted-foreground">Prev.</th>
+                    <th className="px-3 py-3 text-center font-semibold text-muted-foreground">Ped.Tela</th>
+                    <th className="px-3 py-3 text-center font-semibold text-muted-foreground">Faturado</th>
+                    <th className="px-3 py-3 text-right font-semibold text-muted-foreground">Contato</th>
+                    <th className="px-3 py-3 text-right font-semibold text-muted-foreground">Gap (kg)</th>
+                    <th className="px-3 py-3 text-right font-semibold text-muted-foreground">KG/dia</th>
+                    <th className="px-3 py-3 text-center font-semibold text-muted-foreground">Meta</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {allRcs?.map((rc: any) => {
-                    const meta = 100; // Meta é sempre 100%
-                    const previsao = Number(rc.previsaoKg) || 0; // Já é percentual
-                    const realizado = Number(rc.realizadoKg) || 0; // Já é percentual
-                    const atingimento = realizado.toFixed(1); // Já é percentual
-                    const gap = (100 - realizado).toFixed(1); // Gap em percentual
+                  {allRcs.map((rc: any) => {
+                    const metaKg = Number(rc.metaKg) || 0;
+                    const previsaoKg = Number(rc.previsaoKg) || 0;
+                    const emTelaKg = Number(rc.emTelaKg) || 0;
+                    const faturadoKg = Number(rc.realizadoKg) || 0;
+                    const contatoKg = Number(rc.contatoSemanalKg) || 0;
+                    const necessidadeKg = Number(rc.necessidadeDiariaKg) || 0;
+                    
+                    // Percentuais armazenados nos campos reusados
+                    const previsaoPct = Number(rc.consumidorKg) || 0;
+                    const emTelaPct = Number(rc.revendaKg) || 0;
+                    const faturadoPct = Number(rc.industriaKg) || 0;
+                    
+                    // GAP = Em Tela - BDG (negativo = falta para meta)
+                    const gap = emTelaKg - metaKg;
+                    
+                    // KG/dia = GAP negativo / dias úteis restantes
+                    const kgDia = diasUteisRestantes > 0 ? Math.round(Math.abs(gap) / diasUteisRestantes) : 0;
+                    
+                    // Cor da previsão
+                    const previsaoColor = previsaoPct >= 100 ? "text-green-600" : previsaoPct >= 70 ? "text-yellow-600" : "text-red-600";
+                    
                     return (
                       <tr key={rc.repCode} className="hover:bg-muted/50">
-                        <td className="px-4 py-2 font-medium">{rc.repName}</td>
-                        <td className="px-4 py-2 text-right">{meta.toFixed(1)}%</td>
-                        <td className="px-4 py-2 text-right">{previsao.toFixed(1)}%</td>
-                        <td className="px-4 py-2 text-right">{realizado.toFixed(1)}%</td>
-                        <td className="px-4 py-2 text-right">
-                          <span className={Number(atingimento) >= 100 ? "text-green-600 font-semibold" : Number(atingimento) >= 80 ? "text-yellow-600" : "text-red-600"}>
-                            {atingimento}%
+                        <td className="px-3 py-3">
+                          <div className="font-medium">{rc.repName}</div>
+                          <div className="text-xs text-muted-foreground">{rc.repCode}</div>
+                        </td>
+                        <td className="px-3 py-3 text-right font-medium">{formatKg(metaKg)}</td>
+                        <td className="px-3 py-3 text-center">
+                          <span className={`font-bold ${previsaoColor}`}>{Math.round(previsaoPct)}%</span>
+                          <span className="text-xs text-muted-foreground ml-1">{formatKg(previsaoKg)}</span>
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          <span className="font-bold text-blue-600">{Math.round(emTelaPct)}%</span>
+                          <span className="text-xs text-muted-foreground ml-1">{formatKg(emTelaKg)}</span>
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          <span className="font-bold text-red-600">{Math.round(faturadoPct)}%</span>
+                          <span className="text-xs text-muted-foreground ml-1">{formatKg(faturadoKg)}</span>
+                        </td>
+                        <td className="px-3 py-3 text-right">{formatKg(contatoKg)}</td>
+                        <td className="px-3 py-3 text-right">
+                          <span className={gap < 0 ? "text-red-600 font-medium" : "text-green-600 font-medium"}>
+                            {gap < 0 ? `−${formatKg(Math.abs(gap))}` : formatKg(gap)}
                           </span>
                         </td>
-                        <td className="px-4 py-2 text-right">{gap}%</td>
+                        <td className="px-3 py-3 text-right font-medium">{formatKg(kgDia)}</td>
+                        <td className="px-3 py-3 text-center">
+                          <Target className={`h-4 w-4 mx-auto ${previsaoPct >= 100 ? 'text-green-500' : 'text-muted-foreground'}`} />
+                        </td>
                       </tr>
                     );
                   })}
+                  {/* Linha TOTAL */}
+                  <tr className="bg-muted/50 font-bold border-t-2">
+                    <td className="px-3 py-3">TOTAL</td>
+                    <td className="px-3 py-3 text-right">{formatKg(totalBdg)}</td>
+                    <td className="px-3 py-3 text-center">
+                      <span className="text-yellow-600">{previsaoPercent}%</span>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span className="text-blue-600">{emTelaPercent}%</span>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span className="text-red-600">{faturadoPercent}%</span>
+                    </td>
+                    <td className="px-3 py-3 text-right">-</td>
+                    <td className="px-3 py-3 text-right">
+                      <span className="text-red-600">−{formatKg(Math.abs(gapTotal))}</span>
+                    </td>
+                    <td className="px-3 py-3 text-right">{formatKg(kgDiaNecessario)}</td>
+                    <td className="px-3 py-3 text-center">
+                      <Target className="h-4 w-4 mx-auto text-muted-foreground" />
+                    </td>
+                  </tr>
                 </tbody>
               </table>
+            </div>
+
+            {/* Rodapé com dias úteis */}
+            <div className="flex justify-between items-center mt-4 pt-4 border-t text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-muted-foreground"></span>
+                <span>{diasUteisRestantes} dias úteis restantes no mês</span>
+              </div>
+              <div>
+                Necessário: <span className="font-bold text-foreground">{formatKg(kgDiaNecessario)} kg/dia útil</span>
+              </div>
             </div>
           </CardContent>
         </Card>

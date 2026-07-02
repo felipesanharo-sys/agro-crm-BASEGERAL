@@ -1432,6 +1432,21 @@ function getCurrentYearMonth(): string {
 
 
 // ---- Forecast Sync from Google Sheets ----
+// Helper para parsear valores em kg da planilha (ex: "125.000 kg" -> 125000)
+function parseKgValue(val: string): number {
+  if (!val || val === '0 kg' || val === '0') return 0;
+  // Remove " kg" e pontos de milhar, trata vírgula como decimal
+  const cleaned = val.replace(/\s*kg\s*/gi, '').replace(/\./g, '').replace(',', '.');
+  return parseFloat(cleaned) || 0;
+}
+
+// Helper para parsear percentuais da planilha (ex: "16,64%" -> 16.64)
+function parsePercentValue(val: string): number {
+  if (!val || val === '0' || val === '0,00%') return 0;
+  const cleaned = val.replace('%', '').replace(',', '.');
+  return parseFloat(cleaned) || 0;
+}
+
 export async function syncForecastFromGoogleSheets() {
   const db = await getDb();
   if (!db) return { success: false, error: "Database not available" };
@@ -1439,25 +1454,80 @@ export async function syncForecastFromGoogleSheets() {
   try {
     const currentMonth = getCurrentYearMonth();
     
-    // Puxar percentuais da planilha do Google Sheets via Google Apps Script
-    let percentuais: Array<{ repName: string; pedidoEmTelaPercentual: number; previsaoPercentual: number }> = [];
+    // Buscar dados diretamente da planilha via CSV export
+    const SPREADSHEET_ID = '1RNCHT7H2YVCLP-G2-fc4qmpJELOhmwwa2x0b9irlwZk';
+    const GID = '97815045';
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${GID}`;
+    
+    let csvText = '';
     try {
-      const response = await fetch('https://script.google.com/macros/s/AKfycbzBgJOObtdDCFyfAA3Y6RZCmUVQi82wDQW1o0iYCkEuAuoyfMrOCu-kHkT2GQhTSi8rBA/exec');
+      const response = await fetch(csvUrl);
       if (response.ok) {
-        percentuais = await response.json();
-        console.log('[Forecast] Dados recebidos da planilha:', percentuais.length, 'RCs');
+        csvText = await response.text();
+        console.log('[Forecast] CSV recebido, tamanho:', csvText.length);
       } else {
-        console.error('[Forecast] Google Sheets retornou status:', response.status);
+        console.error('[Forecast] Google Sheets CSV retornou status:', response.status);
         return { success: false, error: 'Google Sheets retornou status ' + response.status };
       }
     } catch (error) {
-      console.error('[Forecast] Failed to fetch from Google Sheets:', error);
+      console.error('[Forecast] Failed to fetch CSV:', error);
       return { success: false, error: 'Falha ao conectar com Google Sheets: ' + String(error) };
     }
 
-    if (percentuais.length === 0) {
+    if (!csvText) {
       return { success: false, error: 'Nenhum dado retornado da planilha' };
     }
+
+    // Parsear CSV
+    const lines = csvText.split('\n');
+    if (lines.length < 14) {
+      return { success: false, error: 'Planilha com menos linhas que o esperado' };
+    }
+
+    // Parsear cada linha do CSV (tratar campos com vírgula entre aspas)
+    const parseCsvLine = (line: string): string[] => {
+      const result: string[] = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    }
+
+    // Linha 1 (index 0): Cabeçalho com nomes dos RCs
+    const headerRow = parseCsvLine(lines[0]);
+    // Linha 2 (index 1): BDG (Meta em KG)
+    const bdgRow = parseCsvLine(lines[1]);
+    // Linha 3 (index 2): Previsão Faturamento (KG)
+    const previsaoKgRow = parseCsvLine(lines[2]);
+    // Linha 4 (index 3): Previsão x BDG (%)
+    const previsaoPercentRow = parseCsvLine(lines[3]);
+    // Linha 5 (index 4): Em tela (KG)
+    const emTelaKgRow = parseCsvLine(lines[4]);
+    // Linha 6 (index 5): Em tela x BDG (%)
+    const emTelaPercentRow = parseCsvLine(lines[5]);
+    // Linha 8 (index 7): Faturado (KG)
+    const faturadoKgRow = parseCsvLine(lines[7]);
+    // Linha 13 (index 12): Faturado x BDG (%)
+    const faturadoPercentRow = parseCsvLine(lines[12]);
+    // Linha 14 (index 13): Contato semanal
+    const contatoRow = parseCsvLine(lines[13]);
+    // Linha 20 (index 19): Necessidade diária
+    const necessidadeRow = lines.length > 19 ? parseCsvLine(lines[19]) : [];
+
+    // Extrair dias úteis restantes (Linha 4, última coluna)
+    const diasUteisStr = previsaoPercentRow[previsaoPercentRow.length - 1] || '22';
+    const diasUteis = parseInt(diasUteisStr.replace(/[^\d]/g, '')) || 22;
 
     // Buscar repCode correspondente de invoices para cada RC
     const [repCodesResult] = await db.execute(sql`
@@ -1466,39 +1536,57 @@ export async function syncForecastFromGoogleSheets() {
     const repCodesArray = Array.isArray(repCodesResult) ? repCodesResult : [];
     const repCodesMap = new Map(repCodesArray.map((r: any) => [r.repName, r.repCode]));
 
-    // Mapear dados da planilha para forecast_data
-    const forecastData = percentuais
-      .filter(rc => rc.repName !== 'BA02') // Excluir linha de total
-      .map((rc, index) => {
-        // Tentar encontrar repCode pelo nome exato ou parcial
-        let repCode = repCodesMap.get(rc.repName) || '';
-        if (!repCode) {
-          // Busca parcial
-          const entries = Array.from(repCodesMap.entries());
-          for (const [name, code] of entries) {
-            if (name.includes(rc.repName) || rc.repName.includes(name)) {
-              repCode = code;
-              break;
-            }
+    // Construir dados por RC (colunas B até penúltima, excluindo BA02/total)
+    const forecastData: any[] = [];
+    
+    // Colunas de dados: index 1 até headerRow.length - 3 (excluir últimas colunas: BA02, Ultimo dia do mes)
+    const numRcs = headerRow.length - 3; // Excluir col A, BA02, e última coluna
+    
+    for (let i = 1; i <= numRcs; i++) {
+      const repName = headerRow[i];
+      if (!repName || repName === 'BA02') continue;
+
+      const bdgKg = parseKgValue(bdgRow[i]);
+      const previsaoKg = parseKgValue(previsaoKgRow[i]);
+      const previsaoPercent = parsePercentValue(previsaoPercentRow[i]);
+      const emTelaKg = parseKgValue(emTelaKgRow[i]);
+      const emTelaPercent = parsePercentValue(emTelaPercentRow[i]);
+      const faturadoKg = parseKgValue(faturadoKgRow[i]);
+      const faturadoPercent = parsePercentValue(faturadoPercentRow[i]);
+      const contatoKg = parseKgValue(contatoRow[i]);
+      const necessidadeKg = parseKgValue(necessidadeRow[i] || '0');
+
+      // Tentar encontrar repCode pelo nome
+      let repCode = repCodesMap.get(repName) || '';
+      if (!repCode) {
+        const entries = Array.from(repCodesMap.entries());
+        for (const [name, code] of entries) {
+          if (name.includes(repName) || repName.includes(name)) {
+            repCode = code as string;
+            break;
           }
         }
-        if (!repCode) repCode = `RC_${index + 1}`;
+      }
+      if (!repCode) repCode = `RC_${i}`;
 
-        return {
-          repCode,
-          repName: rc.repName,
-          yearMonth: currentMonth,
-          metaKg: 100, // Meta sempre 100% como base
-          previsaoKg: rc.previsaoPercentual || 0, // Previsão em %
-          realizadoKg: rc.pedidoEmTelaPercentual || 0, // Pedido em Tela = Realizado em %
-          emTelaKg: 0,
-          contatoSemanalKg: 0,
-          consumidorKg: 0,
-          revendaKg: 0,
-          industriaKg: 0,
-          necessidadeDiariaKg: 0,
-        };
+      // GAP = BDG - Em Tela (o que falta para meta baseado no que já está em tela)
+      const gapKg = emTelaKg - bdgKg;
+
+      forecastData.push({
+        repCode,
+        repName,
+        yearMonth: currentMonth,
+        metaKg: bdgKg,
+        previsaoKg: previsaoKg,
+        realizadoKg: faturadoKg,
+        emTelaKg: emTelaKg,
+        contatoSemanalKg: contatoKg,
+        consumidorKg: previsaoPercent, // Reuso: armazenar previsao% aqui
+        revendaKg: emTelaPercent, // Reuso: armazenar emTela% aqui
+        industriaKg: faturadoPercent, // Reuso: armazenar faturado% aqui
+        necessidadeDiariaKg: necessidadeKg,
       });
+    }
 
     // Limpar dados antigos do mês
     await db.execute(sql`DELETE FROM forecast_data WHERE yearMonth = ${currentMonth}`);
@@ -1521,8 +1609,8 @@ export async function syncForecastFromGoogleSheets() {
       }
     }
 
-    console.log('[Forecast] Sincronização concluída:', forecastData.length, 'RCs inseridos');
-    return { success: true, inserted: forecastData.length };
+    console.log('[Forecast] Sincroniza\u00e7\u00e3o conclu\u00edda:', forecastData.length, 'RCs inseridos, dias \u00fateis:', diasUteis);
+    return { success: true, inserted: forecastData.length, diasUteis };
   } catch (error) {
     console.error("Error syncing forecast data:", error);
     return { success: false, error: String(error) };

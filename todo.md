@@ -218,3 +218,12 @@
 - [x] Atualizar tabela de detalhamento para mostrar percentuais
 - [x] Corrigir erros de TypeScript no schema (campos decimal)
 - [x] Corrigir iteração de Map para compatibilidade
+
+## Feature: Recriar Aba Previsão com Layout Correto (Modelo Visual)
+- [x] Reescrever sincronização para buscar CSV direto da planilha Google Sheets (sem depender do Apps Script)
+- [x] Parsear CSV com valores em KG e percentuais corretos
+- [x] Recriar ForecastPage com layout correto: cards com borda colorida (BDG, Previsão Fechamento, Pedido na Tela, Faturado)
+- [x] Implementar gráfico "Faturado x BDG" com 3 barras por RC (Pedido na Tela % azul, Faturado % vermelho, Previsão % amarelo)
+- [x] Implementar tabela detalhada por RC (BDG, Prev, Ped.Tela, Faturado, Contato, Gap, KG/dia, Meta)
+- [x] Adicionar rodapé com dias úteis restantes e KG/dia necessário
+- [x] GAP calculado como Em Tela - BDG (o que falta para meta)
