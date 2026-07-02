@@ -1439,13 +1439,13 @@ export async function syncForecastFromGoogleSheets() {
   try {
     const currentMonth = getCurrentYearMonth();
     
-    // Puxar metas, previsões e realizado da planilha do Google Sheets via Google Apps Script
-    let metasPrevisoes: Array<{ repName: string; metaKg: number; previsaoKg: number; realizadoKg: number }> = [];
+    // Puxar percentuais da planilha do Google Sheets via Google Apps Script
+    let percentuais: Array<{ repName: string; pedidoEmTelaPercentual: number; faturadoPercentual: number; previsaoPercentual: number }> = [];
     try {
-      const response = await fetch('https://script.google.com/macros/s/AKfycbylIlG_SbmmdNaI3Jt2xH25I9JR8iDBbFlELRdgjAOoT65dGedLbv9VV1Cto-u4KV2iCQ/exec');
+      const response = await fetch('https://script.google.com/macros/s/AKfycbzBgJOObtdDCFyfAA3Y6RZCmUVQi82wDQW1o0iYCkEuAuoyfMrOCu-kHkT2GQhTSi8rBA/exec');
       if (response.ok) {
-        metasPrevisoes = await response.json();
-        console.log('[Forecast] Dados recebidos da planilha:', metasPrevisoes.length, 'RCs');
+        percentuais = await response.json();
+        console.log('[Forecast] Dados recebidos da planilha:', percentuais.length, 'RCs');
       } else {
         console.error('[Forecast] Google Sheets retornou status:', response.status);
         return { success: false, error: 'Google Sheets retornou status ' + response.status };
@@ -1455,7 +1455,7 @@ export async function syncForecastFromGoogleSheets() {
       return { success: false, error: 'Falha ao conectar com Google Sheets: ' + String(error) };
     }
 
-    if (metasPrevisoes.length === 0) {
+    if (percentuais.length === 0) {
       return { success: false, error: 'Nenhum dado retornado da planilha' };
     }
 
@@ -1463,17 +1463,19 @@ export async function syncForecastFromGoogleSheets() {
     const [repCodesResult] = await db.execute(sql`
       SELECT DISTINCT repCode, repName FROM invoices
     `);
-    const repCodesMap = new Map((repCodesResult as any[]).map((r: any) => [r.repName, r.repCode]));
+    const repCodesArray = Array.isArray(repCodesResult) ? repCodesResult : [];
+    const repCodesMap = new Map(repCodesArray.map((r: any) => [r.repName, r.repCode]));
 
     // Mapear dados da planilha para forecast_data
-    const forecastData = metasPrevisoes
+    const forecastData = percentuais
       .filter(rc => rc.repName !== 'BA02') // Excluir linha de total
       .map((rc, index) => {
         // Tentar encontrar repCode pelo nome exato ou parcial
         let repCode = repCodesMap.get(rc.repName) || '';
         if (!repCode) {
           // Busca parcial
-          for (const [name, code] of repCodesMap.entries()) {
+          const entries = Array.from(repCodesMap.entries());
+          for (const [name, code] of entries) {
             if (name.includes(rc.repName) || rc.repName.includes(name)) {
               repCode = code;
               break;
@@ -1486,10 +1488,10 @@ export async function syncForecastFromGoogleSheets() {
           repCode,
           repName: rc.repName,
           yearMonth: currentMonth,
-          metaKg: rc.metaKg || 0,
-          previsaoKg: rc.previsaoKg || 0,
-          realizadoKg: rc.realizadoKg || 0,
-          emTelaKg: 0,
+          metaKg: 100, // Meta sempre 100% como base
+          previsaoKg: rc.previsaoPercentual || 0,
+          realizadoKg: rc.faturadoPercentual || 0,
+          emTelaKg: rc.pedidoEmTelaPercentual || 0,
           contatoSemanalKg: 0,
           consumidorKg: 0,
           revendaKg: 0,

@@ -209,3 +209,12 @@
 - [x] Adicionar item "Prospects" ao menu do DashboardLayout.tsx
 - [x] Testar integração completa (criar, editar, deletar prospects)
 - [x] Salvar checkpoint com integração Prospects
+
+## Feature: Integração Google Sheets para Previsão (Percentuais)
+- [x] Atualizar URL do Google Apps Script para retornar percentuais (Pedido em Tela %, Faturado %, Previsão %)
+- [x] Reescrever função syncForecastFromGoogleSheets para usar percentuais em vez de kg
+- [x] Atualizar ForecastPage.tsx para exibir gráfico com base 100 (Meta = 100%)
+- [x] Exibir "Meta (%)", "Previsão (%)", "Realizado (%)" no gráfico de barras
+- [x] Atualizar tabela de detalhamento para mostrar percentuais
+- [x] Corrigir erros de TypeScript no schema (campos decimal)
+- [x] Corrigir iteração de Map para compatibilidade

@@ -54,16 +54,24 @@ export default function ForecastPage() {
     }
   };
 
-  // Prepare chart data
+  // Prepare chart data - Percentuais (Base 100 = Meta)
   const chartData = useMemo(() => {
     if (!allRcs || allRcs.length === 0) return [];
-    return allRcs.map((rc: any) => ({
-      name: rc.repName?.substring(0, 15) || rc.repCode,
-      meta: Number(rc.metaKg) || 0,
-      previsao: Number(rc.previsaoKg) || 0,
-      realizado: Number(rc.realizadoKg) || 0,
-      emTela: Number(rc.emTelaKg) || 0,
-    }));
+    return allRcs.map((rc: any) => {
+      // Os dados já vêm como percentuais da planilha
+      const meta = 100; // Meta é sempre 100% como base
+      const previsao = Number(rc.previsaoKg) || 0; // Já é percentual
+      const realizado = Number(rc.realizadoKg) || 0; // Já é percentual
+      const emTela = Number(rc.emTelaKg) || 0; // Já é percentual
+      
+      return {
+        name: rc.repName?.substring(0, 15) || rc.repCode,
+        meta,
+        previsao,
+        realizado,
+        emTela,
+      };
+    });
   }, [allRcs]);
 
   // Calculate percentages
@@ -189,12 +197,12 @@ export default function ForecastPage() {
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                <YAxis />
-                <Tooltip formatter={(value) => `${(value as number).toLocaleString("pt-BR", { maximumFractionDigits: 0 })} kg`} />
+                <YAxis label={{ value: '%', angle: -90, position: 'insideLeft' }} />
+                <Tooltip formatter={(value) => `${(value as number).toFixed(1)}%`} />
                 <Legend />
-                <Bar dataKey="meta" fill="#10b981" name="Meta" />
-                <Bar dataKey="previsao" fill="#f59e0b" name="Previsão" />
-                <Bar dataKey="realizado" fill="#3b82f6" name="Realizado" />
+                <Bar dataKey="meta" fill="#10b981" name="Meta (100%)" />
+                <Bar dataKey="previsao" fill="#f59e0b" name="Previsão (%)" />
+                <Bar dataKey="realizado" fill="#3b82f6" name="Realizado (%)" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -213,32 +221,32 @@ export default function ForecastPage() {
                 <thead className="bg-muted">
                   <tr>
                     <th className="px-4 py-2 text-left font-semibold">RC</th>
-                    <th className="px-4 py-2 text-right font-semibold">Meta (kg)</th>
-                    <th className="px-4 py-2 text-right font-semibold">Previsão (kg)</th>
-                    <th className="px-4 py-2 text-right font-semibold">Realizado (kg)</th>
+                    <th className="px-4 py-2 text-right font-semibold">Meta (%)</th>
+                    <th className="px-4 py-2 text-right font-semibold">Previsão (%)</th>
+                    <th className="px-4 py-2 text-right font-semibold">Realizado (%)</th>
                     <th className="px-4 py-2 text-right font-semibold">% Atingimento</th>
-                    <th className="px-4 py-2 text-right font-semibold">GAP (kg)</th>
+                    <th className="px-4 py-2 text-right font-semibold">GAP (%)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {allRcs?.map((rc: any) => {
-                    const meta = Number(rc.metaKg) || 0;
-                    const previsao = Number(rc.previsaoKg) || 0;
-                    const realizado = Number(rc.realizadoKg) || 0;
-                    const atingimento = meta > 0 ? ((realizado / meta) * 100).toFixed(1) : "0.0";
-                    const gap = meta - realizado;
+                    const meta = 100; // Meta é sempre 100%
+                    const previsao = Number(rc.previsaoKg) || 0; // Já é percentual
+                    const realizado = Number(rc.realizadoKg) || 0; // Já é percentual
+                    const atingimento = realizado.toFixed(1); // Já é percentual
+                    const gap = (100 - realizado).toFixed(1); // Gap em percentual
                     return (
                       <tr key={rc.repCode} className="hover:bg-muted/50">
                         <td className="px-4 py-2 font-medium">{rc.repName}</td>
-                        <td className="px-4 py-2 text-right">{meta.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</td>
-                        <td className="px-4 py-2 text-right">{previsao.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</td>
-                        <td className="px-4 py-2 text-right">{realizado.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</td>
+                        <td className="px-4 py-2 text-right">{meta.toFixed(1)}%</td>
+                        <td className="px-4 py-2 text-right">{previsao.toFixed(1)}%</td>
+                        <td className="px-4 py-2 text-right">{realizado.toFixed(1)}%</td>
                         <td className="px-4 py-2 text-right">
-                          <span className={atingimento >= "100" ? "text-green-600 font-semibold" : atingimento >= "80" ? "text-yellow-600" : "text-red-600"}>
+                          <span className={Number(atingimento) >= 100 ? "text-green-600 font-semibold" : Number(atingimento) >= 80 ? "text-yellow-600" : "text-red-600"}>
                             {atingimento}%
                           </span>
                         </td>
-                        <td className="px-4 py-2 text-right">{gap.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</td>
+                        <td className="px-4 py-2 text-right">{gap}%</td>
                       </tr>
                     );
                   })}
