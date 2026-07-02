@@ -1453,19 +1453,28 @@ export async function syncForecastFromGoogleSheets() {
     
     const forecastDataFromDb = (forecastResult as any) || [];
     
-    // Buscar metas e previsões reais da tabela forecast_meta_previsao
-    const metasPrevisoes = await getMetasPrevisoes();
-    const metasMap = new Map(metasPrevisoes.map(m => [m.repCode, { metaKg: m.metaKg, previsaoKg: m.previsaoKg }]));
+    // Puxar metas e previsões da planilha do Google Sheets via Google Apps Script
+    let metasPrevisoes: Array<{ repName: string; metaKg: number; previsaoKg: number; realizadoKg: number }> = [];
+    try {
+      const response = await fetch('https://script.google.com/macros/s/AKfycbxZanUj31rbWwQUOYO-fvR6swh_4a6g-8jnKTOomwWk/dev');
+      if (response.ok) {
+        metasPrevisoes = await response.json();
+      }
+    } catch (error) {
+      console.warn('[Forecast] Failed to fetch from Google Sheets:', error);
+    }
     
-    // Mapear dados reais com metas e previsões
+    const metasMap = new Map(metasPrevisoes.map(m => [m.repName, { metaKg: m.metaKg, previsaoKg: m.previsaoKg }]));
+    
+    // Mapear dados reais com metas e previsões da planilha
     const forecastData = forecastDataFromDb.map((rc: any) => {
-      const metaData = metasMap.get(rc.repCode) || { metaKg: 80000, previsaoKg: 0 };
+      const metaData = metasMap.get(rc.repName) || { metaKg: 80000, previsaoKg: 0 };
       return {
         repCode: rc.repCode,
         repName: rc.repName,
         yearMonth: currentMonth,
-        metaKg: metaData.metaKg, // Meta real da tabela
-        previsaoKg: metaData.previsaoKg || Math.ceil((rc.realizadoKg || 0) * 1.2), // Previsão real ou calculada
+        metaKg: metaData.metaKg, // Meta real da planilha
+        previsaoKg: metaData.previsaoKg || Math.ceil((rc.realizadoKg || 0) * 1.2), // Previsão real da planilha ou calculada
         realizadoKg: rc.realizadoKg || 0, // Realizado do YTD
         emTelaKg: 0,
         contatoSemanalKg: 0,
