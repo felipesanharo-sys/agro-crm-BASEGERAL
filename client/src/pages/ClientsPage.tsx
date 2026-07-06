@@ -936,24 +936,58 @@ export default function ClientsPage() {
       )}
 
       {!isAdmin && (
-        <ClientListSection
-          isAdmin={false}
-          repOptions={undefined}
-          repCodeFilter={repCodeFilter}
-          setRepCodeFilter={setRepCodeFilter}
-          channelFilter={channelFilter}
-          setChannelFilter={setChannelFilter}
-          channelOptions={filters?.channels || []}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          clients={filteredClients}
-          isLoading={isLoading}
-          onAction={handleAction}
-          onOpenDetail={setDetailClient}
-          statusCounts={statusCounts}
-        />
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3 h-9">
+            <TabsTrigger value="ranking" className="text-xs">
+              <Trophy className="h-3.5 w-3.5 mr-1.5" />
+              Ranking Saúde
+            </TabsTrigger>
+            <TabsTrigger value="lista" className="text-xs">
+              <Users className="h-3.5 w-3.5 mr-1.5" />
+              Lista de Clientes
+            </TabsTrigger>
+            <TabsTrigger value="evolucao" className="text-xs">
+              <LineChart className="h-3.5 w-3.5 mr-1.5" />
+              Evolução
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="ranking" className="mt-4">
+            <HealthRankingSection onExtract={handleExtract} />
+          </TabsContent>
+
+          <TabsContent value="lista" className="mt-4">
+            <ClientListSection
+              isAdmin={false}
+              repOptions={undefined}
+              repCodeFilter={repCodeFilter}
+              setRepCodeFilter={setRepCodeFilter}
+              channelFilter={channelFilter}
+              setChannelFilter={setChannelFilter}
+              channelOptions={filters?.channels || []}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              clients={filteredClients}
+              isLoading={isLoading}
+              onAction={handleAction}
+              onOpenDetail={setDetailClient}
+              statusCounts={statusCounts}
+            />
+          </TabsContent>
+
+          <TabsContent value="evolucao" className="mt-4">
+            {repOptionsLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-20 w-full rounded-lg" />
+                <Skeleton className="h-64 w-full rounded-lg" />
+              </div>
+            ) : (
+              <YtdRankingSection isAdmin={false} repOptions={repOptions || []} />
+            )}
+          </TabsContent>
+        </Tabs>
       )}
 
       {detailClient && (

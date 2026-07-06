@@ -233,3 +233,4 @@
 - [x] Gestor/Admin vê visão consolidada + todos os RCs
 - [x] Atualizar rotas backend para filtrar por repCode do usuário logado
 - [x] Atualizar frontend para ocultar dropdown e consolidado para RCs
+- [x] Liberar aba Evolução para RCs na página de Clientes (com Ranking Saúde + Lista + Evolução)
