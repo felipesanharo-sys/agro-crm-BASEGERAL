@@ -326,15 +326,18 @@ export default function ForecastPage() {
                     <td className="px-3 py-3">TOTAL</td>
                     <td className="px-3 py-3 text-right">{formatKg(totalBdg)}</td>
                     <td className="px-3 py-3 text-center">
-                      <span className="text-yellow-600">{previsaoPercent}%</span>
+                      <span className="text-yellow-600">{previsaoPercent}%</span>{' '}
+                      <span className="text-xs text-muted-foreground">{formatKg(totalPrevisaoKg)}</span>
                     </td>
                     <td className="px-3 py-3 text-center">
-                      <span className="text-blue-600">{emTelaPercent}%</span>
+                      <span className="text-blue-600">{emTelaPercent}%</span>{' '}
+                      <span className="text-xs text-muted-foreground">{formatKg(totalEmTelaKg)}</span>
                     </td>
                     <td className="px-3 py-3 text-center">
-                      <span className="text-red-600">{faturadoPercent}%</span>
+                      <span className="text-red-600">{faturadoPercent}%</span>{' '}
+                      <span className="text-xs text-muted-foreground">{formatKg(totalFaturadoKg)}</span>
                     </td>
-                    <td className="px-3 py-3 text-right">-</td>
+                    <td className="px-3 py-3 text-right">{formatKg(allRcs.reduce((sum: number, rc: any) => sum + (Number(rc.contatoSemanalKg) || 0), 0))}</td>
                     <td className="px-3 py-3 text-right">
                       <span className="text-red-600">−{formatKg(Math.abs(gapTotal))}</span>
                     </td>
